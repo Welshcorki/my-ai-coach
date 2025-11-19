@@ -1,12 +1,21 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project: Grow</title>
-</head>
-<body>
-    <h1>{{ message }}</h1>
-    <p>Welcome to Project: Grow - Your AI Personal Growth Coach.</p>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Welcome - {{ super() }}{% endblock %}
+
+{% block content %}
+    <h1>Project: Grow</h1>
+    <p>Your AI Personal Growth Coach.</p>
+
+    <div id="chat-box" class="chat-box">
+        <!-- Chat messages will be dynamically inserted here -->
+    </div>
+
+    <form id="chat-form" class="chat-form">
+        <input type="text" id="message-input" autocomplete="off" placeholder="Type your message..."/>
+        <button type="submit">Send</button>
+    </form>
+
+    <footer>
+        <p>Service is running at: <a href="{{ base_url }}">{{ base_url }}</a></p>
+    </footer>
+{% endblock %}
