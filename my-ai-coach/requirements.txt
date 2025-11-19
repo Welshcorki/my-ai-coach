@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-dotenv
+langchain
+langchain-openai
+langchain-google-genai
+pandas
+pillow

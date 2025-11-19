@@ -1,0 +1,23 @@
+# Virtual Environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# IDE/Editor configuration
+.vscode/
+.idea/
+
+# Uploaded files
+# Ignore all files in uploads, but keep the directory
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Data files
+# Ignore all data files, but keep the directory
+data/*
+!data/.gitkeep
