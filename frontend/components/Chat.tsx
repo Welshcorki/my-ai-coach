@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Roadmap, ChatMessage } from '../types.ts';
-import { getChatResponseStream, reviewImage } from '../hooks/useGemini.ts';
+import { getChatResponse, reviewImage } from '../hooks/useGemini.ts';
 import { PaperAirplaneIcon, PaperClipIcon, XMarkIcon, SparklesIcon } from './Icons.tsx';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -83,11 +83,14 @@ const Chat: React.FC<ChatProps> = ({ roadmap }) => {
                 const currentMission = currentWeek?.missions.find(m => !m.is_completed) || currentWeek?.missions[0];
                 const context = `사용자는 ${currentWeek?.week}주차, 미션: "${currentMission?.title}"를 진행 중입니다.`;
                 
-                const stream = await getChatResponseStream([...messages, userMessage], context);
-                for await (const chunk of stream) {
-                    const chunkText = chunk.text;
-                    setMessages(prev => prev.map(msg => msg.id === modelMessageId ? { ...msg, text: msg.text + chunkText } : msg));
-                }
+                const modelResponse = await getChatResponse([...messages, userMessage], context);
+                
+                // 기존 메시지 ID를 사용하여 전체 메시지 객체로 상태를 업데이트합니다.
+                setMessages(prev => prev.map(msg => 
+                    msg.id === modelMessageId 
+                    ? { ...msg, text: modelResponse.text, role: modelResponse.role } 
+                    : msg
+                ));
             }
         } catch (error) {
             console.error(error);
