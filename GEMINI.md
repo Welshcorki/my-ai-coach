@@ -1,35 +1,33 @@
-[출력되는 답변의 언어는 한국어로 출력해
-Think about it step by step.
-Take a break when answering and then answer.
-
-너는 훌륭한 개발자야. 내가 지시하기 전에는 먼저 실행하지 마.]
-
-[지시된 내용은 장기 기억에 저장되어 세션이 변경되어도 유지됩니다.]
-
 # Gemini CLI Plan
 
 This file will contain the plan and tasks to be executed by the Gemini CLI.
 
 ## 작업 기록 (Work Log)
-- **2025-11-19:**
-    - 코드 분석: 기존 코드의 모듈화 및 중복성 검토 완료. `README.md` 아키텍처에 맞춰 개선.
-    - 코드 리팩토링: `main.py`의 주석 및 변수 정리.
-    - 아키텍처 정렬: `app/core/config.py` 생성하여 설정 중앙 관리.
-    - 챗봇 에이전트 구현: `app/agents/chatbot.py`에 `Google Gemini Pro` 연동.
-    - API 통합: `/api/v1/chat` 엔드포인트에 챗봇 에이전트 적용.
-    - **버그 리포트 & 디버깅:** 답변 미출력 문제 보고됨. 로그 파일 분석 결과, `models/gemini-pro is not found` 오류 확인.
-    - **버그 수정:** 사용자 요청에 따라 모델명을 `gemini-2.5-flash`로 변경하여 문제 해결.
-    - **기능 검증:** 챗봇의 정상적인 답변 생성 기능 최종 확인. 3일차 작업 완료.
-    - **작업 중단:** 사용자의 요청에 따라 4일차 작업 시작 전 작업 중단. 내일 이어서 계속.
+- **2025-11-28:**
+    - **아키텍처 분석:** `README.md`와 실제 `code/` 디렉토리 소스 분석 완료.
+    - **문제점 발견:** 문서와 실제 구현 간의 아키텍처 불일치 확인.
+    - **통합 계획 수립:** React 프론트엔드와 FastAPI 백엔드 통합 계획 수립.
+    - **백엔드 스캐폴딩:** `requirements.txt`, `main.py`, `app` 디렉토리 구조 등 FastAPI 백엔드 기본 골격 생성 및 서버 실행 확인 완료.
 
-## Current Task:
-- [ ] (No specific tasks yet. Will be updated with future user requests.)
+## Current Task: 통합 시스템 구축
+
+### 1단계: 백엔드(FastAPI) API 구현 - 완료
+- [x] `app/api/` 폴더 내에 `plan.py`, `chat.py`, `review.py` 라우터를 설정하고, 각 기능에 맞는 API 엔드포인트를 구현했습니다.
+- [x] `useGemini.ts`의 AI 호출 로직을 백엔드로 옮길 준비를 마쳤습니다. (API 파일들 생성)
+- [x] React 앱의 요청을 허용하도록 `main.py`에 CORS 설정을 추가했습니다.
+
+### 2단계: 프론트엔드(React) 수정
+- [ ] `code/hooks/useGemini.ts` 파일의 함수들이 Google API 대신 우리가 1단계에서 만든 FastAPI 엔드포인트를 호출하도록 코드를 수정합니다.
+
+### 3단계: 통합 서빙 설정 및 테스트
+- [ ] `main.py`를 수정하여, FastAPI가 빌드된 React 앱(`static` 폴더)을 서빙하도록 설정합니다.
+- [ ] 전체 기능(로드맵 생성, 채팅, 이미지 리뷰)이 새로운 아키텍처에서 올바르게 동작하는지 최종 테스트를 진행합니다.
 
 ## Project: Grow (7-Day Plan)
-- [x] **1일차:** 프로젝트 기초 공사 (구조 생성, FastAPI 서버 실행)
-- [x] **2일차:** 데이터 모델 및 기본 UI 설계 (Pydantic 모델, Jinja2 템플릿)
+- [x] **1일차:** 프로젝트 기초 공사
+- [x] **2일차:** 데이터 모델 및 기본 UI 설계
 - [x] **3일차:** 일반 대화 기능 구현 (Chatbot Agent)
-- [ ] **4.일차:** 학습 로드맵 생성 기능 구현 (Planner Agent)
-- [ ] **5.일차:** 에이전트 총괄 시스템 구축 (Supervisor)
-- [ ] **6일차:** 이미지 분석 기능 구현 (Reviewer Agent)
+- [x] **4.일차:** 백엔드 에이전트 구현 (Planner & Reviewer Agents)
+- [x] **5일차 (신규): 프론트엔드-백엔드 시스템 통합 (진행중)**
+- [ ] **6일차:** 에이전트 총괄 시스템 구축 (Supervisor)
 - [ ] **7일차:** 시스템 통합 및 고도화 (맥락 인지, UI 개선)

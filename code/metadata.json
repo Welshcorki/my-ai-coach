@@ -1,0 +1,8 @@
+
+{
+  "name": "AI Personal Growth Coach",
+  "description": "An agent-based, multimodal learning coaching platform that analyzes user goals to design structured learning roadmaps and provides feedback on learning progress using image recognition.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

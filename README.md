@@ -22,7 +22,7 @@
 | **Backend** | **FastAPI** (0.109+) | 비동기(Async) 처리 지원 및 Pydantic을 통한 강력한 데이터 검증 |
 | **AI Orchestration** | **LangChain & LangGraph** | 멀티 에이전트(Supervisor-Node) 구조 설계 및 대화 상태(State) 관리 |
 | **LLM / Vision** | OpenAI GPT-4o / Gemini | 복잡한 추론 및 멀티모달(이미지) 분석 |
-| **Frontend** | **Jinja2 Templates** | 별도 FE 프레임워크 없이 Python 친화적인 SSR(Server Side Rendering) 구현 |
+| **Frontend** | **React (TypeScript)** | 컴포넌트 기반의 동적 UI 및 풍부한 사용자 경험 제공 |
 | **Data Management** | **Pandas & JSON/CSV** | 로컬 파일 시스템을 활용한 NoSQL 형태의 경량 데이터 관리 |
 | **Environment** | Python 3.11.14 | 최신 라이브러리 호환성 및 안정성 확보 |
 
@@ -56,42 +56,39 @@ graph TD
 
 ### 3.2. FastAPI 서버 구조
 
-  * **MVC 패턴(유사):** `Router`(Controller) - `Service`(Model/Logic) - `Template`(View) 구조로 분리하여 유지보수성 강화.
+  * **API 서버:** 백엔드는 React 프론트엔드에 데이터를 제공하는 RESTful API 서버 역할을 합니다.
+  * **정적 파일 서빙:** 빌드된 React 애플리케이션의 정적 파일(HTML, JS, CSS)을 직접 서빙합니다.
 
 ## 4\. 📂 디렉토리 구조 (Directory Structure)
 
 ```bash
 my-ai-coach/
- ├── main.py                # [Entry] FastAPI 앱 실행 포인트
+ ├── main.py                # [Entry] FastAPI 앱 실행 및 React 연동
  ├── requirements.txt       # 의존성 패키지 목록
  ├── .env                   # API Key 등 환경 변수
  ├── app/
  │   ├── __init__.py
- │   ├── api/               # 엔드포인트 (라우터)
- │   │   └── endpoints.py   # /, /plan, /chat 등 라우팅 정의
- │   ├── core/              # 핵심 설정
- │   │   └── config.py      # 환경설정 로드
- │   ├── schemas/           # [Pydantic] 데이터 입출력 모델 정의
- │   │   ├── roadmap.py     # 로드맵 데이터 검증 모델
- │   │   └── chat.py        # 채팅 메시지 모델
- │   ├── services/          # 비즈니스 로직 (파일 I/O 등)
- │   │   └── data_service.py
- │   └── agents/            # [LangGraph] AI 에이전트 정의
- │       ├── graph.py       # 그래프 워크플로우 정의
- │       ├── nodes.py       # 각 노드(Planner, Reviewer) 함수
- │       └── tools.py       # 실제 LLM 호출 및 기능 함수
- ├── static/                # CSS, JS, Uploaded Images
- │   ├── css/
- │   ├── js/
- │   └── uploads/
- ├── templates/             # HTML 화면 (Jinja2)
- │   ├── base.html
- │   ├── index.html
- │   └── chat.html
- └── data/                  # 로컬 데이터 저장소
-     ├── roadmap.json
-     ├── study_log.csv
-     └── user_profile.json
+ │   ├── api/               # API 엔드포인트 (라우터)
+ │   │   ├── chat.py        # 채팅 API
+ │   │   ├── plan.py        # 로드맵 생성 API
+ │   │   └── review.py      # 이미지 리뷰 API
+ │   ├── core/              # 핵심 설정 (config.py)
+ │   ├── schemas/           # [Pydantic] 데이터 입출력 모델
+ │   └── agents/            # [LangGraph] AI 에이전트 로직
+ │       ├── chatbot.py
+ │       ├── graph.py
+ │       ├── nodes.py
+ │       └── reviewer.py
+ ├── static/                # [Frontend] React 앱 빌드 결과물이 위치할 디렉토리
+ │   └── .gitkeep
+ ├── code/                  # [Frontend] React 앱 소스 코드
+ │   ├── src/
+ │   │   ├── components/
+ │   │   ├── hooks/
+ │   │   └── App.tsx
+ │   ├── package.json
+ │   └── ...
+ └── data/                  # 로컬 데이터 저장소 (.gitkeep)
 ```
 
 ## 5\. 💾 데이터 모델 (Data Schema)
