@@ -19,7 +19,7 @@
 | 구분 | 기술 (Version) | 선정 이유 |
 | :--- | :--- | :--- |
 | **Backend** | **FastAPI** | 비동기(Async) 처리 지원 및 높은 성능, Swagger UI 자동 생성 |
-| **AI Model** | **Google Gemini 1.5 Flash** | 빠르고 효율적인 멀티모달(텍스트+이미지) 처리 능력 |
+| **AI Model** | **Google Gemini 2.5 Flash** | 빠르고 효율적인 멀티모달(텍스트+이미지) 처리 능력 |
 | **Frontend** | **React + Vite** | 빠른 빌드 속도와 컴포넌트 기반의 유연한 UI 개발 |
 | **Styling** | **Tailwind CSS** | Utility-first 접근 방식으로 신속하고 일관된 디자인 적용 |
 | **Database** | **SQLite (예정)** | 로컬 파일 기반의 가볍고 영구적인 데이터 저장소 |
@@ -90,7 +90,7 @@ pip install -r requirements.txt
 **3. 환경 변수 설정**
 프로젝트 루트에 `.env` 파일을 생성하고 Google API 키를 입력합니다.
 ```text
-GOOGLE_API_KEY=AIzaSy...
+GOOGLE_API_KEY=your_google_api_key_here
 ```
 
 **4. 프론트엔드 빌드 (선택 사항)**
