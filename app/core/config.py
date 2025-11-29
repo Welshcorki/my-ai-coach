@@ -1,13 +1,16 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+import os
+from dotenv import load_dotenv
 
-class Settings(BaseSettings):
-    # .env 파일을 읽어 환경 변수를 로드합니다.
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+# .env 파일 로드
+load_dotenv()
 
-    # GOOGLE_API_KEY 환경 변수를 읽어옵니다.
-    # .env 파일에 GOOGLE_API_KEY="your_api_key_here" 형식으로 저장해야 합니다.
-    GOOGLE_API_KEY: str
+class Settings:
+    # 환경 변수에서 읽어옵니다. 값이 없으면 빈 문자열을 할당합니다.
+    # 필요하다면 에러를 발생시키는 로직을 추가할 수 있습니다.
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
+    
+    # API 키가 없는 경우 경고 메시지를 출력하거나 확인하는 로직을 추가할 수 있습니다.
+    if not GOOGLE_API_KEY:
+        print("Warning: GOOGLE_API_KEY not found in environment variables.")
 
-# 설정 객체를 생성합니다.
-# 다른 파일에서 from app.core.config import settings 형태로 가져와서 사용합니다.
 settings = Settings()

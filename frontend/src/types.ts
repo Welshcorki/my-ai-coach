@@ -12,8 +12,24 @@ export interface Curriculum {
 }
 
 export interface Roadmap {
+    id?: number;
     project_title: string;
     curriculum: Curriculum[];
+}
+
+export interface RoadmapWithHistory extends Roadmap {
+    id: number;
+    chat_history: ChatMessage[];
+}
+
+export interface RoadmapSummary {
+    id: number;
+    project_title: string;
+    goal: string;
+    level: string;
+    created_at: string;
+    total_missions: number;
+    completed_missions: number;
 }
 
 export interface ChatMessage {

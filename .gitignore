@@ -12,12 +12,20 @@ __pycache__/
 .vscode/
 .idea/
 
-# Uploaded files
-# Ignore all files in uploads, but keep the directory
-static/uploads/*
-!static/uploads/.gitkeep
+# Database
+app.db
+
+# Logs
+logs/
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Build artifacts (served by FastAPI)
+static/
 
 # Data files
-# Ignore all data files, but keep the directory
 data/*
 !data/.gitkeep

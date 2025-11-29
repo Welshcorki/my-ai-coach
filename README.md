@@ -1,183 +1,112 @@
 # 🚀 AI 자기 계발 코치 (Project: Grow)
 
-> **"FastAPI와 LangGraph로 구현한 에이전트 기반 멀티모달 학습 코칭 플랫폼"**
+> **"FastAPI와 Google Gemini로 구현한 에이전트 기반 멀티모달 학습 코칭 플랫폼"**
 
-사용자의 목표를 분석하여 구조화된 학습 로드맵을 설계하고, 이미지 인식(Vision) 기술을 통해 학습 인증 및 피드백을 제공하는 **능동형 AI 에이전트 서비스**입니다.
+사용자의 목표와 수준을 분석하여 맞춤형 학습 로드맵을 설계하고, 실시간 대화와 이미지 인식(Vision) 기술을 통해 1:1 과외처럼 학습을 코칭해주는 **능동형 AI 에이전트 서비스**입니다.
 
-## 1\. 📖 프로젝트 개요
+## 1. 📖 프로젝트 개요
 
-  * **프로젝트명:** AI Personal Growth Coach (Code Name: Grow)
-  * **개발 기간:** 2025.11.19 ~ (진행 중)
-  * **개발 인원:** 1인 (Full-Stack)
-  * **개발 환경:** Python 3.11.14
-  * **핵심 목표:**
-      * **Agentic Workflow:** 단순 LLM 호출이 아닌, LangGraph를 활용한 상태 기반(Stateful) 멀티 에이전트 시스템 구현
-      * **Asynchronous Server:** FastAPI의 비동기 처리를 통해 다중 요청에도 끊김 없는 사용자 경험 제공
-      * **Multi-modal Feedback:** Vision API를 활용하여 텍스트뿐만 아니라 이미지(학습 노트, 인증샷) 기반 코칭 제공
+*   **프로젝트명:** AI Personal Growth Coach (Code Name: Grow)
+*   **개발 환경:** Python 3.11+, React (Vite, TypeScript)
+*   **핵심 목표:**
+    *   **Personalized Roadmap:** 사용자의 목표, 수준, 기간, 학습 빈도(Frequency)를 고려한 초개인화 커리큘럼 생성.
+    *   **Dual Validation System:** 단순 완료가 아닌, **실습(증거 확인)**과 **지식(5단계 퀴즈)**으로 이원화된 철저한 검증 시스템.
+    *   **Multi-modal Feedback:** 코드 캡처나 에러 화면을 분석하여 즉각적인 솔루션 제공.
+    *   **Interactive Experience:** AI 승인 시에만 미션 체크가 활성화되는 게이미피케이션 요소 도입.
 
-## 2\. 🛠️ 기술 스택 (Tech Stack)
+## 2. 🛠️ 기술 스택 (Tech Stack)
 
 | 구분 | 기술 (Version) | 선정 이유 |
 | :--- | :--- | :--- |
-| **Backend** | **FastAPI** (0.109+) | 비동기(Async) 처리 지원 및 Pydantic을 통한 강력한 데이터 검증 |
-| **AI Orchestration** | **LangChain & LangGraph** | 멀티 에이전트(Supervisor-Node) 구조 설계 및 대화 상태(State) 관리 |
-| **LLM / Vision** | OpenAI GPT-4o / Gemini | 복잡한 추론 및 멀티모달(이미지) 분석 |
-| **Frontend** | **React (TypeScript)** | 컴포넌트 기반의 동적 UI 및 풍부한 사용자 경험 제공 |
-| **Data Management** | **Pandas & JSON/CSV** | 로컬 파일 시스템을 활용한 NoSQL 형태의 경량 데이터 관리 |
-| **Environment** | Python 3.11.14 | 최신 라이브러리 호환성 및 안정성 확보 |
+| **Backend** | **FastAPI** | 비동기(Async) 처리 지원 및 높은 성능, Swagger UI 자동 생성 |
+| **AI Model** | **Google Gemini 1.5 Flash** | 빠르고 효율적인 멀티모달(텍스트+이미지) 처리 능력 |
+| **Frontend** | **React + Vite** | 빠른 빌드 속도와 컴포넌트 기반의 유연한 UI 개발 |
+| **Styling** | **Tailwind CSS** | Utility-first 접근 방식으로 신속하고 일관된 디자인 적용 |
+| **Database** | **SQLite (예정)** | 로컬 파일 기반의 가볍고 영구적인 데이터 저장소 |
 
-## 3\. 🧠 시스템 아키텍처 (System Architecture)
+## 3. 💡 주요 기능 (Key Features)
 
-이 프로젝트는 단일 체인(Chain)이 아닌, **중앙 관리자(Supervisor)가 각 전문가 에이전트에게 작업을 분배하는 구조**를 가집니다.
+### 3.1. 맞춤형 로드맵 생성
+- 사용자가 학습하고 싶은 주제(예: "파이썬으로 웹 크롤러 만들기"), 현재 수준, 기간, **주당 학습 빈도**를 입력하면 AI가 주차별 커리큘럼을 생성합니다.
+- 주말 집중반, 매일반 등 빈도에 따라 미션의 양과 밀도가 조절됩니다.
 
-### 3.1. LangGraph 에이전트 흐름도
+### 3.2. 1:1 AI 코칭 채팅
+- **맥락 인식(Context Aware):** 현재 사용자가 몇 주차, 어떤 미션을 수행 중인지 AI가 정확히 인지하고 대화합니다.
+- **이원화된 검증 시스템:**
+    - **실습 미션:** "터미널 출력 결과를 보여줘", "코드를 캡처해서 올려줘" 등 증거 기반 검증.
+    - **이론 미션:** 핵심 개념에 대한 **5문제 퀴즈**를 출제하며, 100% 정답을 맞춰야 통과 가능.
 
-```mermaid
-graph TD
-    User[사용자 입력] --> Supervisor{관리자 에이전트}
-    
-    subgraph "Expert Agents"
-        Supervisor -- "계획 수립 요청" --> Planner[Planner Node]
-        Supervisor -- "인증샷/피드백 요청" --> Reviewer[Reviewer Node]
-        Supervisor -- "일반 대화" --> ChatBot[Chat Node]
-    end
-    
-    Planner -- "로드맵 JSON 생성" --> Tool_Gen[Tool: Roadmap Gen]
-    Reviewer -- "이미지 분석" --> Tool_Vision[Tool: Vision Analysis]
-    
-    Tool_Gen --> End[응답 생성]
-    Tool_Vision --> End
-    ChatBot --> End
-```
+### 3.3. 인터랙티브 체크박스 제어
+- 사용자가 임의로 학습을 완료 처리할 수 없습니다.
+- AI와의 대화를 통해 검증을 통과해야만(AI가 `[MISSION_COMPLETE]` 신호 전송) 체크박스가 활성화됩니다.
+- 체크 시 자동으로 다음 단계 학습을 시작하도록 AI에게 신호를 보냅니다.
 
-  * **Supervisor:** 사용자의 의도를 분류(Classification)하여 적절한 에이전트로 라우팅합니다.
-  * **Planner Agent:** 목표와 수준을 분석하여 JSON 포맷의 커리큘럼을 생성합니다.
-  * **Reviewer Agent:** 업로드된 이미지를 분석하고 학습 내용을 평가합니다.
-
-### 3.2. FastAPI 서버 구조
-
-  * **API 서버:** 백엔드는 React 프론트엔드에 데이터를 제공하는 RESTful API 서버 역할을 합니다.
-  * **정적 파일 서빙:** 빌드된 React 애플리케이션의 정적 파일(HTML, JS, CSS)을 직접 서빙합니다.
-
-## 4\. 📂 디렉토리 구조 (Directory Structure)
+## 4. 📂 디렉토리 구조 (Directory Structure)
 
 ```bash
 my-ai-coach/
- ├── main.py                # [Entry] FastAPI 앱 실행 및 React 연동
- ├── requirements.txt       # 의존성 패키지 목록
- ├── .env                   # API Key 등 환경 변수
+ ├── main.py                # [Backend] FastAPI 앱 진입점 & 정적 파일 서빙
+ ├── requirements.txt       # Python 의존성 목록
+ ├── GEMINI.md              # 프로젝트 작업 로그 및 계획
  ├── app/
- │   ├── __init__.py
- │   ├── api/               # API 엔드포인트 (라우터)
- │   │   ├── chat.py        # 채팅 API
- │   │   ├── plan.py        # 로드맵 생성 API
- │   │   └── review.py      # 이미지 리뷰 API
- │   ├── core/              # 핵심 설정 (config.py)
- │   ├── schemas/           # [Pydantic] 데이터 입출력 모델
- │   └── agents/            # [LangGraph] AI 에이전트 로직
- │       ├── chatbot.py
- │       ├── graph.py
- │       ├── nodes.py
- │       └── reviewer.py
- ├── static/                # [Frontend] React 앱 빌드 결과물이 위치할 디렉토리
- │   └── .gitkeep
- ├── code/                  # [Frontend] React 앱 소스 코드
+ │   ├── api/               # API 엔드포인트
+ │   │   ├── chat.py        # 채팅 & 검증 로직
+ │   │   ├── plan.py        # 로드맵 생성 로직
+ │   │   └── review.py      # 이미지 분석 로직
+ │   ├── core/              # 설정 (config.py)
+ │   └── schemas/           # Pydantic 데이터 모델
+ ├── frontend/              # [Frontend] React 소스 코드
  │   ├── src/
- │   │   ├── components/
- │   │   ├── hooks/
+ │   │   ├── components/    # Chat, Roadmap, Dashboard 등 UI 컴포넌트
+ │   │   ├── hooks/         # API 통신 훅
  │   │   └── App.tsx
- │   ├── package.json
- │   └── ...
- └── data/                  # 로컬 데이터 저장소 (.gitkeep)
+ │   ├── vite.config.ts     # 빌드 설정 (출력 경로: ../static)
+ │   └── tailwind.config.js # 스타일 설정
+ └── static/                # [Build] 빌드된 프론트엔드 파일 (FastAPI가 서빙)
 ```
 
-## 5\. 💾 데이터 모델 (Data Schema)
-
-### A. 학습 로드맵 (`roadmap.json`)
-
-Planner Agent가 생성하는 구조화된 데이터입니다.
-
-```json
-{
-  "project_title": "FastAPI 마스터",
-  "curriculum": [
-    {
-      "week": 1,
-      "theme": "기초 다지기",
-      "missions": [
-        {"id": "w1_m1", "title": "Pydantic 이해하기", "is_completed": false}
-      ]
-    }
-  ]
-}
-```
-
-### B. 학습 기록 (`study_log.csv`)
-
-시계열 데이터 분석을 위해 CSV로 관리합니다.
-
-  * **Columns:** `date`, `week`, `mission_id`, `content`(텍스트 요약), `image_path`, `ai_feedback`, `satisfaction`
-
-## 6\. 🚀 설치 및 실행 가이드 (Installation)
+## 5. 🚀 설치 및 실행 가이드 (Installation)
 
 **1. 저장소 클론 및 이동**
-
 ```bash
 git clone [repository_url]
 cd my-ai-coach
 ```
 
-**2. 가상환경 생성 (Python 3.11.14)**
-
+**2. 백엔드 환경 설정 (Python)**
 ```bash
+# 가상환경 생성
 python -m venv venv
-# Windows
+
+# 활성화 (Windows)
 venv\Scripts\activate
-# Mac/Linux
+# 활성화 (Mac/Linux)
 source venv/bin/activate
-```
 
-**3. 의존성 설치**
-
-```bash
+# 의존성 설치
 pip install -r requirements.txt
 ```
 
-**4. 환경 변수 설정**
-`.env` 파일을 생성하고 API 키를 입력합니다.
-
+**3. 환경 변수 설정**
+프로젝트 루트에 `.env` 파일을 생성하고 Google API 키를 입력합니다.
 ```text
-OPENAI_API_KEY=sk-proj-...
-# 또는
-GOOGLE_API_KEY=AIza...
+GOOGLE_API_KEY=AIzaSy...
+```
+
+**4. 프론트엔드 빌드 (선택 사항)**
+이미 `static` 폴더에 빌드 파일이 포함되어 있다면 건너뛰어도 됩니다. 수정이 필요한 경우:
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
 ```
 
 **5. 서버 실행**
-Uvicorn을 사용하여 비동기 서버를 실행합니다.
-
 ```bash
-uvicorn main:app --reload
+python main.py
 ```
+* 브라우저에서 `http://127.0.0.1:8000` 접속
 
-  * 브라우저에서 `http://127.0.0.1:8000` 접속
-
-## 7\. 💡 주요 기능 (Features)
-
-1.  **맞춤형 로드맵 생성:** 사용자의 수준/목표/기간을 입력하면 LangGraph의 **Planner Node**가 개인화된 JSON 계획표를 작성.
-2.  **실시간 코칭 채팅:** **Chat Node**가 현재 진행 중인 주차(Week)와 미션 정보를 기억(Context Aware)하고 답변.
-3.  **멀티모달 인증:** 노트 필기나 모니터 화면을 찍어 올리면 **Reviewer Node**가 Vision 모델로 분석하여 칭찬 및 보완점 피드백.
-4.  **대시보드 & 게이미피케이션:** 학습 현황 시각화 및 미션 완료 시 배지/경험치 시스템(예정).
-
------
-
-### 📝 License
-
+## 6. 📝 License
 This project is licensed under the MIT License.
-
------
-
-### 👨‍💻 Author
-
-  * **Name:** [Your Name]
-  * **Role:** AI Engineer / Full-Stack Developer
-  * **Contact:** [Your Email]

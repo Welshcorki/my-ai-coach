@@ -1,5 +1,5 @@
 
-import { Roadmap, ChatMessage } from '../types.ts';
+import { Roadmap, ChatMessage, RoadmapWithHistory, RoadmapSummary } from '../types.ts';
 
 // FastAPI 백엔드 서버의 주소
 const BASE_URL = 'http://127.0.0.1:8000/api/v1';
@@ -34,16 +34,30 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
     }
 }
 
-export const generateRoadmap = async (goal: string, level: string, duration: number): Promise<Roadmap> => {
+export const generateRoadmap = async (goal: string, level: string, duration: number, frequency: string): Promise<Roadmap> => {
     return fetchAPI<Roadmap>('/plan', {
         method: 'POST',
-        body: JSON.stringify({ goal, level, duration }),
+        body: JSON.stringify({ goal, level, duration, frequency }),
+    });
+};
+
+export const getAllRoadmaps = async (): Promise<RoadmapSummary[]> => {
+    return fetchAPI<RoadmapSummary[]>('/roadmaps', { method: 'GET' });
+};
+
+export const getRoadmapDetail = async (id: number): Promise<RoadmapWithHistory> => {
+    return fetchAPI<RoadmapWithHistory>(`/roadmap/${id}`, { method: 'GET' });
+};
+
+export const completeMission = async (roadmapId: number, missionKey: string): Promise<{ status: string, roadmap_id: number, mission_key: string }> => {
+    return fetchAPI<{ status: string, roadmap_id: number, mission_key: string }>(`/roadmap/${roadmapId}/mission/${missionKey}/complete`, {
+        method: 'PUT',
     });
 };
 
 // 참고: 스트리밍을 지원하려면 이 함수와 Chat.tsx의 로직 수정이 필요합니다.
 // 우선 통합을 위해 간단한 요청/응답 모델로 변경합니다.
-export const getChatResponse = async (history: ChatMessage[], currentContext: string): Promise<ChatMessage> => {
+export const getChatResponse = async (history: ChatMessage[], currentContext: string, roadmapId: number): Promise<ChatMessage> => {
     const lastUserMessage = history[history.length - 1];
     if (!lastUserMessage || lastUserMessage.role !== 'user') {
         throw new Error("Invalid chat history: last message must be from user.");
@@ -55,6 +69,7 @@ export const getChatResponse = async (history: ChatMessage[], currentContext: st
             history: history,
             context: currentContext,
             message: lastUserMessage.text,
+            roadmap_id: roadmapId
         }),
     });
 };
