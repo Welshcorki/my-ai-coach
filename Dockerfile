@@ -40,7 +40,7 @@ ENV PORT=8080
 EXPOSE 8080
 
 # [개선된 실행 명령어]
-# uvicorn을 직접 실행하여 환경 변수($PORT)를 확실하게 반영
-# main.py를 거치지 않고 직접 실행하는 것이 더 명확하고 성능상 유리
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT}
+# 쉘 형식을 사용하여 환경 변수($PORT) 확장 보장
+# Cloud Run이 제공하는 PORT 환경 변수를 정확히 읽어옴
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
 
