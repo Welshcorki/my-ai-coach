@@ -3,6 +3,25 @@
 This file will contain the plan and tasks to be executed by the Gemini CLI.
 
 ## 작업 기록 (Work Log)
+- **2025-12-10:**
+    - **Cloud Run 배포 환경 구축:**
+        - **Dockerfile 생성:** 멀티 스테이지 빌드로 프론트엔드 빌드 및 백엔드 실행 환경 구성
+            - Stage 1: Node.js 20-alpine으로 프론트엔드 빌드 (`npm run build`)
+            - Stage 2: Python 3.11-slim으로 FastAPI 서버 실행
+            - `vite.config.ts`의 `outDir: '../static'` 설정에 맞춰 빌드 결과물을 `/app/static`으로 복사
+            - Cloud Run 표준 포트 8080 사용 (환경 변수로 오버라이드 가능)
+            - `uvicorn`을 직접 실행하여 환경 변수 반영 및 성능 최적화
+        - **.dockerignore 생성:** 불필요한 파일 제외로 빌드 속도 향상 및 이미지 크기 감소
+            - `venv/`, `__pycache__/`, `node_modules/`, `.git/`, `logs/`, `static/` 등 제외
+        - **main.py 수정:** Cloud Run의 PORT 환경 변수 지원 및 host 설정 변경
+            - `os.getenv("PORT", "8000")`로 환경 변수에서 포트 읽기
+            - host를 `0.0.0.0`으로 변경하여 컨테이너 외부 접근 가능하도록 설정
+            - 로컬 개발 환경 호환성 유지 (기본값 8000)
+        - **문제 해결:** `.gitignore`에 `static/` 폴더가 제외되어 GitHub 저장소에 빌드 결과물이 없어 발생한 배포 오류 해결
+            - Dockerfile에서 프론트엔드를 빌드하여 `static/` 폴더 생성
+            - Cloud Run 배포 시 "Frontend build not found" 에러 해결
+            - GitHub 연동 배포 시 Dockerfile이 자동으로 프론트엔드를 빌드하도록 구성
+
 - **2025-11-29:**
     - **UI/UX 개선 및 버그 수정:**
         - **마크다운 렌더링:** `@tailwindcss/typography` 플러그인 적용으로 채팅 내 마크다운(`**굵은 글씨**` 등) 스타일 정상화.
@@ -32,6 +51,7 @@ This file will contain the plan and tasks to be executed by the Gemini CLI.
 
 ## 작업 기록 (Work Log)
 - **2025-11-29:**
+    - **기능 고도화 (RAG Lite):** PDF 학습 자료 기반 로드맵 생성 기능 구현 (Alembic 도입 잠정 보류).
     - **멀티 로드맵 기능 구현 (옵션 A):**
         - **백엔드:** `GET /roadmaps`, `GET /roadmap/{id}` API 추가 및 기존 API(`chat`, `mission`)를 `roadmap_id` 기반으로 수정.
         - **프론트엔드:** `SetupScreen`에 "나의 학습 목록" UI 추가, 앱 시작 시 목록 조회 로직 구현, 이어하기 기능 완성.
@@ -48,17 +68,19 @@ This file will contain the plan and tasks to be executed by the Gemini CLI.
         - 학습 빈도(Frequency) 설정 반영 로드맵 생성.
         - 실습/지식 이원화 검증 및 `[MISSION_COMPLETE]` 태그 시스템.
 
-## Current Task: 시스템 안정화 및 추가 기능 개발
+## Current Task: 시스템 안정화 (Alembic)
 
 ### 1. 시스템 안정화
-- [ ] DB 마이그레이션 도구(Alembic) 도입 검토 (추후 스키마 변경 대비).
-- [ ] 예외 처리 강화 (API 호출 실패 시 UX 개선).
+- [ ] DB 마이그레이션 도구(Alembic) 도입.
+- [ ] 예외 처리 강화.
 
-### 2. 추가 기능
-- [ ] 사용자 관리 (로그인/회원가입) 시스템 도입 검토.
-- [ ] 학습 통계 대시보드 고도화 (주간/월간 리포트).
+### 2. 완료된 작업 (Completed)
 
-## 완료된 작업 (Completed)
+### 2025-12-09
+- [x] **RAG Lite 구현:** PDF 교재 업로드 및 분석 기반 로드맵 생성 기능 완료.
+    - **Backend:** `POST /plan` API를 `multipart/form-data` 지원으로 변경, Gemini File API 연동, `print` 문을 `logging` 모듈로 전면 교체.
+    - **Frontend:** `FormData` 전송 로직 구현 (`useGemini.ts`), 파일 선택 및 취소 UI 추가 (`SetupScreen.tsx`).
+    - **Build:** 프론트엔드 최신 변경 사항 빌드 완료 (`static/` 갱신).
 
 ### 2025-11-29
 - [x] **멀티 로드맵 지원:** 여러 학습 프로젝트를 동시에 관리하고 이어할 수 있는 기능 구현.

@@ -2,7 +2,9 @@
 import { Roadmap, ChatMessage, RoadmapWithHistory, RoadmapSummary } from '../types.ts';
 
 // FastAPI 백엔드 서버의 주소
-const BASE_URL = 'http://127.0.0.1:8000/api/v1';
+// 배포 환경에서는 같은 도메인에서 서빙되므로 상대 경로 사용
+// 로컬 개발 환경에서는 Vite 프록시 설정을 사용하거나 환경 변수로 설정 가능
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 /**
  * API 요청을 위한 헬퍼 함수
@@ -12,12 +14,18 @@ const BASE_URL = 'http://127.0.0.1:8000/api/v1';
  */
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     try {
+        const headers: HeadersInit = {
+            ...options.headers,
+        };
+
+        // FormData가 아닐 때만 Content-Type: application/json 추가
+        if (!(options.body instanceof FormData)) {
+            (headers as Record<string, string>)['Content-Type'] = 'application/json';
+        }
+
         const response = await fetch(`${BASE_URL}${endpoint}`, {
             ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers,
-            },
+            headers,
         });
 
         if (!response.ok) {
@@ -34,10 +42,20 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
     }
 }
 
-export const generateRoadmap = async (goal: string, level: string, duration: number, frequency: string): Promise<Roadmap> => {
+export const generateRoadmap = async (goal: string, level: string, duration: number, frequency: string, file?: File | null): Promise<Roadmap> => {
+    const formData = new FormData();
+    formData.append('goal', goal);
+    formData.append('level', level);
+    formData.append('duration', duration.toString());
+    formData.append('frequency', frequency);
+    
+    if (file) {
+        formData.append('file', file);
+    }
+
     return fetchAPI<Roadmap>('/plan', {
         method: 'POST',
-        body: JSON.stringify({ goal, level, duration, frequency }),
+        body: formData,
     });
 };
 

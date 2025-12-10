@@ -40,11 +40,11 @@ const App: React.FC = () => {
         }
     };
 
-    const handleCreateRoadmap = useCallback(async (goal: string, level: string, duration: number, frequency: string) => {
+    const handleCreateRoadmap = useCallback(async (goal: string, level: string, duration: number, frequency: string, file?: File | null) => {
         setIsLoading(true);
         setError(null);
         try {
-            const newRoadmap = await generateRoadmap(goal, level, duration, frequency);
+            const newRoadmap = await generateRoadmap(goal, level, duration, frequency, file);
             setRoadmap(newRoadmap);
             // 새 로드맵 생성 시 초기 메시지
             setMessages([{ 

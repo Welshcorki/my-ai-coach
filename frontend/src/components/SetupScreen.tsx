@@ -3,7 +3,7 @@ import { RobotIcon, SparklesIcon } from './Icons.tsx';
 import { RoadmapSummary } from '../types.ts';
 
 interface SetupScreenProps {
-    onCreateRoadmap: (goal: string, level: string, duration: number, frequency: string) => void;
+    onCreateRoadmap: (goal: string, level: string, duration: number, frequency: string, file: File | null) => void;
     roadmapList: RoadmapSummary[];
     onLoadRoadmap: (id: number) => void;
     isLoading: boolean;
@@ -15,11 +15,27 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onCreateRoadmap, roadmapList,
     const [level, setLevel] = useState('초급');
     const [duration, setDuration] = useState(4);
     const [frequency, setFrequency] = useState('매일 (월~금, 5일)');
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const file = e.target.files[0];
+            if (file.type === 'application/pdf') {
+                setSelectedFile(file);
+            } else {
+                alert('PDF 파일만 업로드할 수 있습니다.');
+            }
+        }
+    };
+
+    const handleRemoveFile = () => {
+        setSelectedFile(null);
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (goal.trim() && duration > 0) {
-            onCreateRoadmap(goal, level, duration, frequency);
+            onCreateRoadmap(goal, level, duration, frequency, selectedFile);
         }
     };
 
@@ -41,6 +57,31 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onCreateRoadmap, roadmapList,
                         새로운 학습 시작하기
                      </h2>
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        
+                        {/* 파일 업로드 UI */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-gray-300 mb-2">학습 교재 (PDF, 선택사항)</label>
+                            {!selectedFile ? (
+                                <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-gray-900 hover:bg-gray-800 transition">
+                                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                        <p className="text-xs text-gray-400">PDF 파일을 드래그하거나 클릭하여 업로드</p>
+                                    </div>
+                                    <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf" />
+                                </label>
+                            ) : (
+                                <div className="flex items-center justify-between p-3 bg-purple-900/30 border border-purple-500/50 rounded-lg">
+                                    <div className="flex items-center space-x-3 overflow-hidden">
+                                        <svg className="w-6 h-6 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                        <span className="text-sm text-gray-200 truncate">{selectedFile.name}</span>
+                                    </div>
+                                    <button type="button" onClick={handleRemoveFile} className="text-gray-400 hover:text-white transition">
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         <div>
                             <label htmlFor="goal" className="block text-sm font-medium text-gray-300 mb-2">무엇을 마스터하고 싶으신가요?</label>
                             <input

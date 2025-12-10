@@ -1,0 +1,48 @@
+# Virtual Environment
+venv/
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+
+# IDE/Editor configuration
+.vscode/
+.idea/
+
+# Database
+app.db
+
+# Logs
+logs/
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Build artifacts (will be built in Docker)
+static/
+
+# Data files
+data/
+
+# Git
+.git/
+.gitignore
+
+# Old backup
+old/
+
+# Templates (not used)
+templates/
+
+# Documentation
+*.md
+!README.md
+
+# Python cache
+**/__pycache__/
+*.py[cod]
+*$py.class
+

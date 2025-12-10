@@ -89,6 +89,10 @@ async def serve_react_app(full_path: str):
 
 if __name__ == "__main__":
     import uvicorn
-    # reload=True: 개발 모드 옵션입니다. 코드가 변경되면 서버를 자동으로 재시작합니다.
-    # 주의: 실제 배포(Production) 환경에서는 성능 저하를 막기 위해 reload=False로 설정해야 합니다.
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    # 환경 변수에서 PORT를 가져오되, 없으면 8000 (로컬용)
+    port = int(os.getenv("PORT", "8000"))
+    # reload는 개발 환경에서만 활성화 (환경 변수로 제어)
+    # Dockerfile에서는 uvicorn을 직접 실행하므로 이 블록은 로컬 개발용
+    reload = os.getenv("RELOAD", "true").lower() == "true"
+    # 0.0.0.0으로 설정해야 컨테이너 외부에서 접속 가능
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=reload)
