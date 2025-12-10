@@ -12,18 +12,22 @@ from app import models
 Base.metadata.create_all(bind=engine)
 
 # --- Logging Configuration ---
-# 로그 폴더가 없으면 생성
-if not os.path.exists("logs"):
-    os.mkdir("logs")
+handlers = [logging.StreamHandler()] # 기본적으로 콘솔 출력은 항상 활성화
 
-# 로깅 설정: 콘솔 출력 + 파일 저장 (logs/server.log)
+# Cloud Run 환경이 아닐 때만 파일 로깅 활성화 (Cloud Run은 파일 시스템이 읽기 전용일 수 있음)
+if not os.getenv("K_SERVICE"):
+    # 로그 폴더가 없으면 생성
+    if not os.path.exists("logs"):
+        os.mkdir("logs")
+    
+    # 파일에 저장 (최대 10MB, 5개 유지)
+    handlers.append(RotatingFileHandler("logs/server.log", maxBytes=10*1024*1024, backupCount=5, encoding='utf-8'))
+
+# 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
-    handlers=[
-        logging.StreamHandler(), # 콘솔에 출력
-        RotatingFileHandler("logs/server.log", maxBytes=10*1024*1024, backupCount=5, encoding='utf-8') # 파일에 저장 (최대 10MB, 5개 유지)
-    ]
+    handlers=handlers
 )
 
 # WatchFiles 로그 레벨 조정 (로그 파일 변경 감지로 인한 무한 루프 방지)
