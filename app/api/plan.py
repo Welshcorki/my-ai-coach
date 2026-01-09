@@ -80,6 +80,10 @@ async def generate_plan(
             [Reference Material]
             - A file has been uploaded by the user. 
             - **CRITICAL:** You MUST analyze the uploaded file (Table of Contents, key concepts) and strictly base the curriculum on this material.
+            - **REQUIREMENT:** Provide a **DETAILED summary** of the file in the 'context_summary' field. 
+              - Include the **Table of Contents** structure.
+              - Summarize **key concepts** and learning objectives for each major section.
+              - This summary will be used as context for a chatbot to answer user questions about this book, so be comprehensive (up to 2000 characters is fine).
             - Ensure the roadmap covers the key topics found in the file within the given duration.
             """
             
@@ -103,6 +107,7 @@ async def generate_plan(
         [JSON Structure Example]
         {{
           "project_title": "Mastering Python in 4 Weeks",
+          "context_summary": "This course covers Python basics, data structures, and simple algorithms based on the uploaded textbook...",
           "curriculum": [
             {{
               "week": 1,
@@ -142,7 +147,8 @@ async def generate_plan(
             goal=goal,
             level=level,
             duration=duration,
-            frequency=frequency
+            frequency=frequency,
+            context_summary=roadmap_data.get("context_summary")
         )
         db.add(db_roadmap)
         db.commit()

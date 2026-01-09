@@ -4,7 +4,7 @@ import { Roadmap, ChatMessage, RoadmapWithHistory, RoadmapSummary } from '../typ
 // FastAPI 백엔드 서버의 주소
 // 배포 환경에서는 같은 도메인에서 서빙되므로 상대 경로 사용
 // 로컬 개발 환경에서는 Vite 프록시 설정을 사용하거나 환경 변수로 설정 가능
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
  * API 요청을 위한 헬퍼 함수
@@ -81,7 +81,7 @@ export const getChatResponse = async (history: ChatMessage[], currentContext: st
         throw new Error("Invalid chat history: last message must be from user.");
     }
 
-    return fetchAPI<ChatMessage>('/chat', {
+    const result = await fetchAPI<ChatMessage>('/chat', {
         method: 'POST',
         body: JSON.stringify({
             history: history,
@@ -90,6 +90,26 @@ export const getChatResponse = async (history: ChatMessage[], currentContext: st
             roadmap_id: roadmapId
         }),
     });
+
+    // 퀴즈 데이터 파싱 로직
+    const quizRegex = /\[QUIZ\]([\s\S]*?)\[\/QUIZ\]/;
+    const match = result.text.match(quizRegex);
+
+    if (match) {
+        try {
+            const quizJson = match[1].trim();
+            const quizData = JSON.parse(quizJson);
+            
+            // 파싱 성공 시 퀴즈 데이터를 설정하고 텍스트에서 태그 제거
+            result.quiz = quizData;
+            result.text = result.text.replace(match[0], '').trim();
+        } catch (e) {
+            console.error("Failed to parse quiz JSON:", e);
+            // 파싱 실패 시 원본 텍스트 유지 (혹은 에러 표시)
+        }
+    }
+
+    return result;
 };
 
 export const reviewImage = async (base64Image: string, mimeType: string, prompt: string): Promise<{ text: string; modelImage?: string }> => {
@@ -97,4 +117,12 @@ export const reviewImage = async (base64Image: string, mimeType: string, prompt:
         method: 'POST',
         body: JSON.stringify({ base64Image, mimeType, prompt }),
     });
+};
+
+export const getHeatmapData = async (): Promise<{ date: string, count: number }[]> => {
+    return fetchAPI<{ date: string, count: number }[]>('/stats/heatmap', { method: 'GET' });
+};
+
+export const getRoadmapProgress = async (roadmapId: number): Promise<{ progress: number, total: number, completed: number }> => {
+    return fetchAPI<{ progress: number, total: number, completed: number }>(`/stats/progress/${roadmapId}`, { method: 'GET' });
 };

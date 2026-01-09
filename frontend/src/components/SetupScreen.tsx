@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RobotIcon, SparklesIcon } from './Icons.tsx';
 import { RoadmapSummary } from '../types.ts';
+import CalendarHeatmap from 'react-calendar-heatmap';
+import 'react-calendar-heatmap/dist/styles.css';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
+import { getHeatmapData } from '../hooks/useGemini.ts';
 
 interface SetupScreenProps {
     onCreateRoadmap: (goal: string, level: string, duration: number, frequency: string, file: File | null) => void;
@@ -16,6 +21,19 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onCreateRoadmap, roadmapList,
     const [duration, setDuration] = useState(4);
     const [frequency, setFrequency] = useState('매일 (월~금, 5일)');
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [heatmapData, setHeatmapData] = useState<{ date: string, count: number }[]>([]);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const data = await getHeatmapData();
+                setHeatmapData(data);
+            } catch (err) {
+                console.error("Failed to fetch stats:", err);
+            }
+        };
+        fetchStats();
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -39,6 +57,10 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onCreateRoadmap, roadmapList,
         }
     };
 
+    const today = new Date();
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(today.getFullYear() - 1);
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 max-w-7xl mx-auto">
             <div className="text-center mb-8 mt-8">
@@ -47,6 +69,51 @@ const SetupScreen: React.FC<SetupScreenProps> = ({ onCreateRoadmap, roadmapList,
                 </div>
                 <h1 className="text-4xl md:text-5xl font-bold font-space-grotesk text-white">AI 자기 계발 코치</h1>
                 <p className="text-lg text-gray-400 mt-2">목표를 정의하세요. 숙련으로 가는 길을 함께 만들어가요.</p>
+            </div>
+
+            {/* 히트맵 섹션 (잔디 심기) */}
+            <div className="w-full bg-gray-800/30 border border-gray-700/50 rounded-2xl p-6 mb-12 backdrop-blur-sm shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-bold text-gray-300 flex items-center">
+                        <span className="mr-2">🌱</span> 나의 학습 열정 (최근 1년)
+                    </h2>
+                    <div className="text-xs text-gray-500 flex items-center gap-2">
+                        Less <div className="flex gap-1"><div className="w-3 h-3 bg-gray-700 rounded-sm"></div><div className="w-3 h-3 bg-purple-900 rounded-sm"></div><div className="w-3 h-3 bg-purple-700 rounded-sm"></div><div className="w-3 h-3 bg-purple-500 rounded-sm"></div><div className="w-3 h-3 bg-purple-300 rounded-sm"></div></div> More
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <div className="min-w-[800px]">
+                        <CalendarHeatmap
+                            startDate={oneYearAgo}
+                            endDate={today}
+                            values={heatmapData}
+                            classForValue={(value) => {
+                                if (!value || value.count === 0) return 'color-empty';
+                                if (value.count < 3) return 'color-scale-1';
+                                if (value.count < 6) return 'color-scale-2';
+                                if (value.count < 10) return 'color-scale-3';
+                                return 'color-scale-4';
+                            }}
+                            // @ts-ignore
+                            tooltipDataAttrs={(value: any) => {
+                                if (!value || !value.date) return { 'data-tooltip-id': 'heatmap-tooltip', 'data-tooltip-content': '활동 없음' };
+                                return {
+                                    'data-tooltip-id': 'heatmap-tooltip',
+                                    'data-tooltip-content': `${value.date}: ${value.count} 활동량`,
+                                };
+                            }}
+                        />
+                        <Tooltip id="heatmap-tooltip" />
+                    </div>
+                </div>
+                <style>{`
+                    .react-calendar-heatmap .color-empty { fill: #1f2937; }
+                    .react-calendar-heatmap .color-scale-1 { fill: #4c1d95; }
+                    .react-calendar-heatmap .color-scale-2 { fill: #6d28d9; }
+                    .react-calendar-heatmap .color-scale-3 { fill: #8b5cf6; }
+                    .react-calendar-heatmap .color-scale-4 { fill: #c084fc; }
+                    .react-calendar-heatmap rect { rx: 2; ry: 2; }
+                `}</style>
             </div>
 
             <div className="flex flex-col lg:flex-row gap-8 w-full items-start justify-center">

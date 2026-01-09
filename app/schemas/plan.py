@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 
 class PlanRequest(BaseModel):
     goal: str
@@ -18,5 +18,7 @@ class WeekPlan(BaseModel):
     missions: List[Mission]
 
 class RoadmapResponse(BaseModel):
+    id: int
     project_title: str
+    context_summary: Optional[str] = None
     curriculum: List[WeekPlan]

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 from typing import List
 from app.core.database import get_db
 from app import models
@@ -96,5 +97,6 @@ async def complete_mission(roadmap_id: int, mission_key: str, db: Session = Depe
         raise HTTPException(status_code=404, detail="Mission not found")
         
     mission.is_completed = True
+    mission.completed_at = func.now()
     db.commit()
     return {"status": "success", "roadmap_id": roadmap_id, "mission_key": mission_key}

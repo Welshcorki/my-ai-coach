@@ -12,6 +12,7 @@ class Roadmap(Base):
     level = Column(String)
     duration = Column(Integer)
     frequency = Column(String)
+    context_summary = Column(Text, nullable=True)  # PDF summary or key concepts
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -28,6 +29,7 @@ class Mission(Base):
     mission_key = Column(String)  # e.g., "w1_m1"
     title = Column(String)
     is_completed = Column(Boolean, default=False)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     roadmap = relationship("Roadmap", back_populates="missions")

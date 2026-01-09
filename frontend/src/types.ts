@@ -38,4 +38,12 @@ export interface ChatMessage {
     text: string;
     image?: string; // base64 data URL for display
     modelImage?: string; // base64 data URL from model
+    quiz?: QuizData;
+}
+
+export interface QuizData {
+    question: string;
+    options: string[];
+    answer_index: number;
+    explanation: string;
 }

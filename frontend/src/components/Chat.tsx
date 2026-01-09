@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Roadmap, ChatMessage } from '../types.ts';
+import { Roadmap, ChatMessage, QuizData } from '../types.ts';
 import { getChatResponse, reviewImage } from '../hooks/useGemini.ts';
 import { PaperAirplaneIcon, PaperClipIcon, XMarkIcon, SparklesIcon } from './Icons.tsx';
 import ReactMarkdown from 'react-markdown';
@@ -12,6 +12,62 @@ interface ChatProps {
     onMissionCompleteSignal: () => void;
     autoSendTrigger: boolean;
 }
+
+const QuizCard: React.FC<{ quiz: QuizData, onSolve: (isCorrect: boolean, selectedOption: string) => void }> = ({ quiz, onSolve }) => {
+    const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+    const [isSolved, setIsSolved] = useState(false);
+    const [isCorrect, setIsCorrect] = useState(false);
+
+    const handleOptionClick = (idx: number) => {
+        if (isSolved) return;
+        setSelectedIdx(idx);
+        const correct = idx === quiz.answer_index;
+        setIsCorrect(correct);
+        setIsSolved(true);
+        
+        // 잠시 후 부모에게 알림 (애니메이션 효과 등을 위해 딜레이)
+        setTimeout(() => {
+             onSolve(correct, quiz.options[idx]);
+        }, 1500);
+    };
+
+    return (
+        <div className="mt-4 bg-gray-800 border border-purple-500/30 rounded-xl p-5 shadow-lg max-w-lg">
+            <div className="flex items-center gap-2 mb-3">
+                <span className="bg-purple-600 text-xs font-bold px-2 py-1 rounded text-white">QUIZ</span>
+                <h3 className="font-semibold text-white">지식 점검</h3>
+            </div>
+            <p className="text-gray-200 mb-4 text-lg font-medium">{quiz.question}</p>
+            <div className="grid gap-2">
+                {quiz.options.map((option, idx) => (
+                    <button
+                        key={idx}
+                        onClick={() => handleOptionClick(idx)}
+                        disabled={isSolved}
+                        className={`p-3 text-left rounded-lg transition-all border ${
+                            isSolved
+                                ? idx === quiz.answer_index
+                                    ? 'bg-green-600/20 border-green-500 text-green-200'
+                                    : idx === selectedIdx
+                                        ? 'bg-red-600/20 border-red-500 text-red-200'
+                                        : 'bg-gray-700/50 border-gray-700 text-gray-400'
+                                : 'bg-gray-700 hover:bg-gray-600 border-gray-600 text-gray-200 hover:border-purple-400'
+                        }`}
+                    >
+                        <span className="inline-block w-6 font-bold">{String.fromCharCode(65 + idx)}.</span>
+                        {option}
+                    </button>
+                ))}
+            </div>
+            {isSolved && (
+                <div className={`mt-4 p-3 rounded-lg text-sm ${isCorrect ? 'bg-green-900/30 text-green-300' : 'bg-red-900/30 text-red-300'}`}>
+                    <p className="font-bold mb-1">{isCorrect ? "🎉 정답입니다!" : "😅 아쉽네요."}</p>
+                    <p>{quiz.explanation}</p>
+                </div>
+            )}
+        </div>
+    );
+};
 
 const Chat: React.FC<ChatProps> = ({ roadmap, messages, setMessages, onMissionCompleteSignal, autoSendTrigger }) => {
     const [input, setInput] = useState('');
@@ -64,7 +120,7 @@ const Chat: React.FC<ChatProps> = ({ roadmap, messages, setMessages, onMissionCo
 
             setMessages(prev => prev.map(msg => 
                 msg.id === modelMessageId 
-                ? { ...msg, text: responseText, role: modelResponse.role } 
+                ? { ...msg, text: responseText, role: modelResponse.role, quiz: modelResponse.quiz } 
                 : msg
             ));
         } catch (error) {
@@ -73,6 +129,15 @@ const Chat: React.FC<ChatProps> = ({ roadmap, messages, setMessages, onMissionCo
             setMessages(prev => prev.map(msg => msg.id === modelMessageId ? { ...msg, text: `오류: ${errorText}` } : msg));
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleQuizSolve = (isCorrect: boolean, selectedOption: string) => {
+        if (isCorrect) {
+            // 정답일 경우 자동으로 다음 메시지 전송
+            handleAutoSend(`정답입니다! (${selectedOption}) 다음 문제나 피드백을 주세요.`);
+        } else {
+            // 오답일 경우 별도 전송 없이 UI에서만 피드백 유지 (사용자가 직접 채팅 치거나 다시 시도)
         }
     };
 
@@ -164,7 +229,7 @@ const Chat: React.FC<ChatProps> = ({ roadmap, messages, setMessages, onMissionCo
                 // 기존 메시지 ID를 사용하여 전체 메시지 객체로 상태를 업데이트합니다.
                 setMessages(prev => prev.map(msg => 
                     msg.id === modelMessageId 
-                    ? { ...msg, text: responseText, role: modelResponse.role } 
+                    ? { ...msg, text: responseText, role: modelResponse.role, quiz: modelResponse.quiz } 
                     : msg
                 ));
             }
@@ -183,18 +248,26 @@ const Chat: React.FC<ChatProps> = ({ roadmap, messages, setMessages, onMissionCo
                 <div className="space-y-6 max-w-4xl mx-auto">
                     {messages.map((msg) => {
                         // 빈 메시지(로딩 중인 상태)는 렌더링하지 않음 (별도 로딩 UI가 처리)
-                        if (msg.role === 'model' && !msg.text && !msg.modelImage) return null;
+                        if (msg.role === 'model' && !msg.text && !msg.modelImage && !msg.quiz) return null;
                         
                         return (
-                            <div key={msg.id} className={`flex items-end gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0"><SparklesIcon className="w-5 h-5 text-white"/></div>}
-                                <div className={`max-w-xl p-4 rounded-2xl ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-lg' : 'bg-gray-700 text-gray-200 rounded-bl-lg'}`}>
-                                    {msg.image && <img src={msg.image} alt="사용자 업로드" className="rounded-lg mb-2 max-h-60" />}
-                                    <div className="prose prose-invert prose-sm max-w-none">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                            <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                <div className={`flex items-end gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                    {msg.role === 'model' && <div className="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0"><SparklesIcon className="w-5 h-5 text-white"/></div>}
+                                    <div className={`max-w-xl p-4 rounded-2xl ${msg.role === 'user' ? 'bg-blue-600 text-white rounded-br-lg' : 'bg-gray-700 text-gray-200 rounded-bl-lg'}`}>
+                                        {msg.image && <img src={msg.image} alt="사용자 업로드" className="rounded-lg mb-2 max-h-60" />}
+                                        <div className="prose prose-invert prose-sm max-w-none">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+                                        </div>
+                                        {msg.modelImage && <img src={msg.modelImage} alt="모델 생성 이미지" className="rounded-lg mt-2 max-h-60" />}
                                     </div>
-                                    {msg.modelImage && <img src={msg.modelImage} alt="모델 생성 이미지" className="rounded-lg mt-2 max-h-60" />}
                                 </div>
+                                {/* 퀴즈 렌더링 - 모델 메시지 하단에 위치 */}
+                                {msg.quiz && (
+                                    <div className="ml-11"> 
+                                        <QuizCard quiz={msg.quiz} onSolve={handleQuizSolve} />
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
