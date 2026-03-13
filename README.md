@@ -61,49 +61,44 @@
 
 ## 4. 🚀 향후 로드맵 (Evolution Plan)
 
-이 프로젝트는 현재 **MVP(Minimum Viable Product)** 단계이며, 지속적으로 발전하고 있습니다.
+이 프로젝트는 현재 **v2.0 전환 단계**에 있으며, 지속적으로 발전하고 있습니다. 상세 계획은 [ai_coach_v2.md](docs/ai_coach_v2.md)를 참조하세요.
 
-### 🚨 0순위: 지능 정상화 (Critical Fix)
-- [x] **동적 페르소나 적용:** 현재 "코딩 코치"로 고정된 AI 자아를, 사용자 목표(요리, 운동 등)에 따라 유연하게 변경되도록 수정.
-- [x] **맥락 인식 강화:** PDF 내용을 로드맵 생성뿐만 아니라 채팅 중에도 참조하도록 개선 (RAG Lite).
+### 🚨 Phase 1: 인프라 안정화 (진행 중)
+- [x] **코드 정리 & 문서화:** 미사용 폴더 정리 및 `docs/` 중심 문서화 완료.
+- [/] **영구 DB 도입:** Supabase(PostgreSQL) 연동 및 Alembic 마이그레이션 도입.
+- [/] **사용자 인증:** Supabase Auth를 이용한 개인별 학습 기록 관리 구현 중.
 
-### 1순위: 인프라 안정화
-- [ ] **영구 DB 도입:** Supabase(PostgreSQL) 등을 연동하여 데이터 증발 문제 해결.
-- [ ] **사용자 인증:** Firebase/Supabase Auth로 개인별 학습 기록 관리.
+### 🚀 Phase 2: 기능 고도화
+- [ ] **로드맵 생성 고도화:** 사용자 수준/학습 빈도 반영 강화.
+- [ ] **AI 코칭 채팅 개선:** 맥락 인식 강화 및 인터랙티브 UI 최적화.
 
-### 2순위: 기능 고도화
-- [x] **퀴즈 및 평가 시스템 추가:** 이론 미션에 대한 객관식 퀴즈 시스템 및 인터랙티브 UI 구현 완료.
+### 🧠 Phase 3: Full RAG 시스템
+- [ ] **벡터 DB 기반 검색:** pgvector를 활용한 심층 문서 분석 및 참조 코칭 구현.
 
 ## 5. 📂 디렉토리 구조 (Directory Structure)
 
 ```bash
 my-ai-coach/
- ├── main.py                # [Backend] FastAPI 앱 진입점 & 정적 파일 서빙
+ ├── main.py                # [Backend] FastAPI 앱 진입점 (프론트엔드 정적 파일 서빙 포함)
  ├── requirements.txt       # Python 의존성 목록
  ├── Dockerfile             # [Deploy] Cloud Run 배포용 이미지 설정
- ├── .dockerignore          # Docker 빌드 컨텍스트 제외 파일 목록
- ├── DEPLOY.md              # 배포 트러블슈팅 및 관리 가이드
- ├── DB_COMPARISON.md       # 데이터베이스 비교 분석 문서
- ├── GEMINI.md              # 프로젝트 작업 로그 및 상세 계획
- ├── app/
+ ├── alembic.ini            # [DB] Alembic 마이그레이션 설정
+ ├── .agents/               # [Agent] AI 에이전트 전용 설정 및 워크플로우
+ │   └── workflows/
+ │       └── coding-rules.md # 프로젝트 코딩 규칙 및 아키텍처 원칙
+ ├── docs/                  # [Docs] 시스템 설계 및 개발 문서
+ │   ├── ARCHITECTURE.md    # 전체 시스템 아키텍처
+ │   ├── DEV_LOG.md         # 개발 작업 로그
+ │   ├── ai_coach_v2.md     # v2.0 종합 기획안
+ │   └── ... (기타 문서)
+ ├── app/                   # [Backend] FastAPI 애플리케이션 로직
+ │   ├── api/               # API 엔드포인트 (chat, plan, roadmap, stats 등)
+ │   ├── core/              # 핵심 설정 (config, database, auth 등)
  │   ├── models.py          # SQLAlchemy 데이터베이스 모델
- │   ├── api/               # API 엔드포인트
- │   │   ├── chat.py        # 채팅 & AI 코칭 로직
- │   │   ├── plan.py        # 로드맵 생성 로직
- │   │   ├── review.py      # 이미지 분석 로직
- │   │   ├── roadmap.py     # 로드맵 조회 및 관리
- │   │   └── stats.py       # 통계/대시보드 API
- │   ├── core/              # 설정 및 DB 연결
- │   │   ├── config.py      # 환경 변수 설정
- │   │   └── database.py    # SQLAlchemy 엔진 및 세션 설정
- │   ├── schemas/           # Pydantic 데이터 모델
- │   │   ├── chat.py        # 채팅 요청/응답 스키마
- │   │   ├── plan.py        # 로드맵 생성 스키마
- │   │   ├── review.py      # 이미지 리뷰 스키마
- │   │   └── roadmap.py     # 로드맵 조회 스키마
- │   ├── agents/            # (예비) AI 에이전트 로직
- │   └── services/          # (예비) 비즈니스 로직 서비스
- ├── frontend/              # [Frontend] React 소스 코드
+ │   ├── schemas/           # Pydantic 데이터 모델 (Request/Response)
+ │   └── services/          # 비즈니스 로직 서비스 레이어
+ ├── alembic/               # [DB] 데이터베이스 마이그레이션 이력
+ ├── frontend/              # [Frontend] React (Vite + TypeScript) 소스 코드
  │   ├── src/
  │   │   ├── components/    # UI 컴포넌트
  │   │   │   ├── Chat.tsx           # 채팅 인터페이스
@@ -138,15 +133,13 @@ git clone https://github.com/Welshcorki/my-ai-coach.git
 cd my-ai-coach
 ```
 
-**2. 백엔드 환경 설정 (Python)**
+**2. 백엔드 환경 설정 (Python — Conda)**
 ```bash
-# 가상환경 생성
-python -m venv venv
+# conda 가상환경 생성
+conda create -n aicoach python=3.11 -y
 
-# 활성화 (Windows)
-venv\Scripts\activate
-# 활성화 (Mac/Linux)
-source venv/bin/activate
+# 활성화
+conda activate aicoach
 
 # 의존성 설치
 pip install -r requirements.txt

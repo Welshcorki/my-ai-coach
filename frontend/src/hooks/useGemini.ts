@@ -4,7 +4,7 @@ import { Roadmap, ChatMessage, RoadmapWithHistory, RoadmapSummary } from '../typ
 // FastAPI 백엔드 서버의 주소
 // 배포 환경에서는 같은 도메인에서 서빙되므로 상대 경로 사용
 // 로컬 개발 환경에서는 Vite 프록시 설정을 사용하거나 환경 변수로 설정 가능
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2';
 
 /**
  * API 요청을 위한 헬퍼 함수
@@ -48,7 +48,7 @@ export const generateRoadmap = async (goal: string, level: string, duration: num
     formData.append('level', level);
     formData.append('duration', duration.toString());
     formData.append('frequency', frequency);
-    
+
     if (file) {
         formData.append('file', file);
     }
@@ -99,7 +99,7 @@ export const getChatResponse = async (history: ChatMessage[], currentContext: st
         try {
             const quizJson = match[1].trim();
             const quizData = JSON.parse(quizJson);
-            
+
             // 파싱 성공 시 퀴즈 데이터를 설정하고 텍스트에서 태그 제거
             result.quiz = quizData;
             result.text = result.text.replace(match[0], '').trim();

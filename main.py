@@ -55,12 +55,12 @@ app.add_middleware(
 # app/api 폴더의 라우터들을 포함합니다.
 from app.api import plan, chat, review, roadmap, stats
 
-# 각 라우터를 "/api/v1" 접두사와 함께 앱에 추가합니다.
-app.include_router(plan.router, prefix="/api/v1", tags=["Plan"])
-app.include_router(chat.router, prefix="/api/v1", tags=["Chat"])
-app.include_router(review.router, prefix="/api/v1", tags=["Review"])
-app.include_router(roadmap.router, prefix="/api/v1", tags=["Roadmap"])
-app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
+# 각 라우터를 "/api/v2" 접두사와 함께 앱에 추가합니다. (인증 체제 적용 후 v2)
+app.include_router(plan.router, prefix="/api/v2", tags=["Plan"])
+app.include_router(chat.router, prefix="/api/v2", tags=["Chat"])
+app.include_router(review.router, prefix="/api/v2", tags=["Review"])
+app.include_router(roadmap.router, prefix="/api/v2", tags=["Roadmap"])
+app.include_router(stats.router, prefix="/api/v2/stats", tags=["stats"])
 
 # --- Frontend Serving ---
 

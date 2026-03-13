@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.core.database import get_db
+from app.core.auth import get_current_user
 from app import models
 from datetime import date, timedelta
 from typing import List, Dict, Any
@@ -9,31 +10,35 @@ from typing import List, Dict, Any
 router = APIRouter()
 
 @router.get("/heatmap")
-async def get_heatmap_data(db: Session = Depends(get_db)):
+async def get_heatmap_data(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     """
-    최근 1년 간의 활동량(미션 완료 + 채팅 메시지 수)을 날짜별로 집계하여 반환합니다.
+    본인의 최근 1년 간 활동량(미션 완료 + 채팅 메시지 수)을 날짜별로 집계하여 반환합니다.
     """
-    # 1년 전 날짜 계산
     one_year_ago = date.today() - timedelta(days=365)
 
-    # 1. 일별 채팅 수 집계
+    # 1. 일별 채팅 수 집계 (현재 사용자의 로드맵에 속한 채팅만)
     chat_stats = db.query(
         func.date(models.ChatHistory.created_at).label("date"),
         func.count(models.ChatHistory.id).label("count")
-    ).filter(
+    ).join(models.Roadmap).filter(
         models.ChatHistory.created_at >= one_year_ago,
-        models.ChatHistory.role == "user"
+        models.ChatHistory.role == "user",
+        models.Roadmap.user_id == current_user.id
     ).group_by(
         func.date(models.ChatHistory.created_at)
     ).all()
 
-    # 2. 일별 미션 완료 수 집계
+    # 2. 일별 미션 완료 수 집계 (현재 사용자의 로드맵에 속한 미션만)
     mission_stats = db.query(
         func.date(models.Mission.completed_at).label("date"),
         func.count(models.Mission.id).label("count")
-    ).filter(
+    ).join(models.Roadmap).filter(
         models.Mission.completed_at >= one_year_ago,
-        models.Mission.is_completed == True
+        models.Mission.is_completed == True,
+        models.Roadmap.user_id == current_user.id
     ).group_by(
         func.date(models.Mission.completed_at)
     ).all()
@@ -56,10 +61,23 @@ async def get_heatmap_data(db: Session = Depends(get_db)):
     return heatmap_data
 
 @router.get("/progress/{roadmap_id}")
-async def get_roadmap_progress(roadmap_id: int, db: Session = Depends(get_db)):
+async def get_roadmap_progress(
+    roadmap_id: int, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     """
-    특정 로드맵의 진행률(완료된 미션 수 / 전체 미션 수)을 반환합니다.
+    본인의 특정 로드맵 진행률(완료된 미션 수 / 전체 미션 수)을 반환합니다.
     """
+    # 권한 확인
+    roadmap = db.query(models.Roadmap).filter(
+        models.Roadmap.id == roadmap_id,
+        models.Roadmap.user_id == current_user.id
+    ).first()
+    
+    if not roadmap:
+        raise HTTPException(status_code=404, detail="Roadmap not found or permission denied")
+
     total_missions = db.query(models.Mission).filter(models.Mission.roadmap_id == roadmap_id).count()
     completed_missions = db.query(models.Mission).filter(
         models.Mission.roadmap_id == roadmap_id,

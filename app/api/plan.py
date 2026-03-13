@@ -10,6 +10,7 @@ from typing import Optional
 from app.core.config import settings
 from app.schemas.plan import RoadmapResponse
 from app.core.database import get_db
+from app.core.auth import get_current_user
 from app import models
 
 # 로거 설정
@@ -17,8 +18,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Gemini API 설정
-genai.configure(api_key=settings.GOOGLE_API_KEY)
+# Gemini API는 config.py에서 1회 초기화됨
 
 @router.post("/plan", response_model=RoadmapResponse)
 async def generate_plan(
@@ -27,10 +27,11 @@ async def generate_plan(
     duration: int = Form(...),
     frequency: str = Form(...),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
 ):
     """
-    사용자의 목표, 수준, 기간 및 선택적 학습 자료(PDF 등)를 받아 AI를 통해 학습 로드맵을 생성하고 DB에 저장합니다.
+    사용자의 목표, 수준, 기간 및 선택적 학습 자료(PDF 등)를 받아 본인의 계정에 AI 로드맵을 생성하고 DB에 저장합니다.
     """
     temp_filename = None
     uploaded_file = None
@@ -39,7 +40,7 @@ async def generate_plan(
         logger.info(f"Generating plan for Goal: {goal}, Level: {level}, Duration: {duration} weeks")
         
         # 모델 설정: gemini-2.5-flash (멀티모달 지원)
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel(settings.GEMINI_MODEL_NAME)
 
         # 기본 프롬프트 구성
         base_instruction = f"""
@@ -141,8 +142,9 @@ async def generate_plan(
         roadmap_data = json.loads(cleaned_text)
         logger.info(f"Roadmap generated successfully: {roadmap_data.get('project_title')}")
 
-        # DB 저장 로직
+        # DB 저장 로직 (현재 사용자 ID 연결)
         db_roadmap = models.Roadmap(
+            user_id=current_user.id,
             project_title=roadmap_data["project_title"],
             goal=goal,
             level=level,

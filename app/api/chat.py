@@ -1,29 +1,40 @@
+import logging
+
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 import google.generativeai as genai
 from app.core.config import settings
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.core.database import get_db
+from app.core.auth import get_current_user
 from app import models
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Gemini API 설정
-genai.configure(api_key=settings.GOOGLE_API_KEY)
-
 @router.post("/chat", response_model=ChatResponse)
-async def chat_with_ai(request: ChatRequest, db: Session = Depends(get_db)):
+async def chat_with_ai(
+    request: ChatRequest, 
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
     """
     사용자와 AI 간의 채팅을 처리하고 DB에 저장합니다.
+    본인의 로드맵에만 채팅할 수 있습니다.
     """
     try:
         # 1. 로드맵 ID 검증 및 조회 (시스템 프롬프트 구성을 위해 가장 먼저 수행)
         if not request.roadmap_id:
             raise HTTPException(status_code=400, detail="Roadmap ID is required for chat logging.")
 
-        target_roadmap = db.query(models.Roadmap).filter(models.Roadmap.id == request.roadmap_id).first()
+        target_roadmap = db.query(models.Roadmap).filter(
+            models.Roadmap.id == request.roadmap_id,
+            models.Roadmap.user_id == current_user.id
+        ).first()
+        
         if not target_roadmap:
-            raise HTTPException(status_code=404, detail="Roadmap not found")
+            raise HTTPException(status_code=404, detail="Roadmap not found or permission denied")
 
         # 참고 자료 요약 정보가 있으면 프롬프트에 추가
         context_instruction = ""
@@ -98,12 +109,12 @@ async def chat_with_ai(request: ChatRequest, db: Session = Depends(get_db)):
 
         # 생성 설정 (답변 길이 및 창의성 제어)
         generation_config = genai.types.GenerationConfig(
-            max_output_tokens=1000,
-            temperature=0.7,
+            max_output_tokens=settings.DEFAULT_MAX_OUTPUT_TOKENS,
+            temperature=settings.DEFAULT_TEMPERATURE,
         )
 
         model = genai.GenerativeModel(
-            'gemini-2.5-flash',
+            settings.GEMINI_MODEL_NAME,
             system_instruction=system_instruction,
             generation_config=generation_config
         )
@@ -143,5 +154,5 @@ async def chat_with_ai(request: ChatRequest, db: Session = Depends(get_db)):
         return ChatResponse(role="model", text=response.text)
 
     except Exception as e:
-        print(f"Error in chat: {str(e)}")
+        logger.error(f"Error in chat: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Chat Error: {str(e)}")

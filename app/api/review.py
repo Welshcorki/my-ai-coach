@@ -1,21 +1,27 @@
-from fastapi import APIRouter, HTTPException
+import logging
+
+from fastapi import APIRouter, HTTPException, Depends
 import google.generativeai as genai
 import base64
 from app.core.config import settings
 from app.schemas.review import ReviewRequest, ReviewResponse
+from app.core.auth import get_current_user
+from app import models
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Gemini API 설정
-genai.configure(api_key=settings.GOOGLE_API_KEY)
-
 @router.post("/review", response_model=ReviewResponse)
-async def review_image(request: ReviewRequest):
+async def review_image(
+    request: ReviewRequest,
+    current_user: models.User = Depends(get_current_user)
+):
     """
     사용자가 업로드한 이미지를 AI가 분석하여 피드백을 제공합니다.
     """
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel(settings.GEMINI_MODEL_NAME)
         
         # Base64 문자열에서 실제 데이터 부분만 추출 (혹시 헤더가 포함되어 있다면)
         # 예: "data:image/png;base64,iVBOR..." -> "iVBOR..."
@@ -45,5 +51,5 @@ async def review_image(request: ReviewRequest):
         return ReviewResponse(text=response.text)
 
     except Exception as e:
-        print(f"Error in review: {str(e)}")
+        logger.error(f"Error in review: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Vision Analysis Error: {str(e)}")

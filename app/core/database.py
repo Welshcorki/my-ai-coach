@@ -1,28 +1,37 @@
+import logging
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-import os
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from app.core.config import settings
 
-# SQLite 데이터베이스 파일 경로 설정
-# Cloud Run 환경(K_SERVICE 환경변수 존재)에서는 쓰기 가능한 /tmp 디렉토리 사용
-if os.getenv("K_SERVICE"):
-    SQLALCHEMY_DATABASE_URL = "sqlite:////tmp/app.db"
-else:
-    # 로컬 개발 환경
-    SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
+logger = logging.getLogger(__name__)
 
-# connect_args={"check_same_thread": False}는 SQLite에서만 필요합니다.
-# FastAPI는 멀티 스레딩을 사용하므로, 한 스레드에서 생성된 커넥션을 다른 스레드에서 쓸 수 있게 허용해야 합니다.
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
 
+class Base(DeclarativeBase):
+    """SQLAlchemy 2.0 스타일 베이스 클래스."""
+    pass
+
+
+def _build_engine():
+    """DATABASE_URL에 따라 적절한 엔진을 생성합니다."""
+    url = settings.DATABASE_URL
+
+    connect_args = {}
+    if url.startswith("sqlite"):
+        # SQLite는 멀티스레드 접근 허용 필요
+        connect_args["check_same_thread"] = False
+        logger.info("Using SQLite database (local development)")
+    else:
+        logger.info("Using PostgreSQL database")
+
+    return create_engine(url, connect_args=connect_args)
+
+
+engine = _build_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
 
-# Dependency Injection을 위한 헬퍼 함수
 def get_db():
+    """FastAPI 의존성 주입용 DB 세션 제공 함수."""
     db = SessionLocal()
     try:
         yield db

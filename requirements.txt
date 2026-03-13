@@ -1,6 +1,12 @@
 fastapi
-uvicorn[standard]
+uvicorn
 google-generativeai
-python-dotenv
 sqlalchemy
+python-dotenv
 python-multipart
+
+# Phase 1: Supabase/PostgreSQL
+psycopg2-binary
+alembic
+supabase
+python-jose[cryptography]
