@@ -2,19 +2,25 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Roadmap, ChatMessage, RoadmapSummary } from './types.ts';
 import SetupScreen from './components/SetupScreen.tsx';
 import Dashboard from './components/Dashboard.tsx';
+import LoginScreen from './components/LoginScreen.tsx';
+import { ArrowLeftOnRectangleIcon } from './components/Icons.tsx';
+import { useAuth } from './hooks/useAuth.ts';
 import { generateRoadmap, getAllRoadmaps, getRoadmapDetail } from './hooks/useGemini.ts';
 
 const App: React.FC = () => {
+    const { session, loading: authLoading, signInWithGoogle, signOut } = useAuth();
     const [roadmap, setRoadmap] = useState<Roadmap | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [roadmapList, setRoadmapList] = useState<RoadmapSummary[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
-    // 앱 시작 시 학습 목록 로드
+    // 로그인(세션 존재) 이후에만 학습 목록 로드
     useEffect(() => {
-        loadRoadmapList();
-    }, []);
+        if (session) {
+            loadRoadmapList();
+        }
+    }, [session]);
 
     const loadRoadmapList = async () => {
         try {
@@ -71,15 +77,46 @@ const App: React.FC = () => {
         }
     };
 
+    // 세션 확인 중: 로딩 스피너
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0f0c29] via-[#1a1a2e] to-[#1c1c3c]">
+                <svg className="animate-spin h-8 w-8 text-purple-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+            </div>
+        );
+    }
+
+    // 미로그인: 로그인 화면
+    if (!session) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-[#0f0c29] via-[#1a1a2e] to-[#1c1c3c] text-gray-200">
+                <LoginScreen onGoogle={signInWithGoogle} />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-[#0f0c29] via-[#1a1a2e] to-[#1c1c3c] text-gray-200">
+            {/* 우상단 로그아웃 버튼 */}
+            <button
+                type="button"
+                onClick={signOut}
+                title="로그아웃"
+                className="fixed top-4 right-4 z-50 flex items-center gap-1.5 bg-gray-800/70 hover:bg-gray-700 border border-gray-700 text-gray-300 hover:text-white text-sm px-3 py-2 rounded-lg backdrop-blur-sm transition"
+            >
+                <ArrowLeftOnRectangleIcon className="w-4 h-4" />
+                로그아웃
+            </button>
             {roadmap ? (
-                <Dashboard 
-                    roadmap={roadmap} 
-                    setRoadmap={setRoadmap} 
+                <Dashboard
+                    roadmap={roadmap}
+                    setRoadmap={setRoadmap}
                     messages={messages}
                     setMessages={setMessages}
-                    onReset={handleReset} 
+                    onReset={handleReset}
                 />
             ) : (
                 <SetupScreen

@@ -1,5 +1,6 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:conda",
     "python-envs.defaultPackageManager": "ms-python.python:conda",
-    "python-envs.pythonProjects": []
+    "python.defaultInterpreterPath": "C:\\Users\\butte\\miniconda3\\envs\\aicoach\\python.exe",
+    "python.terminal.activateEnvironment": true
 }

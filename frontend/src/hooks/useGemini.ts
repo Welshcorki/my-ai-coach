@@ -1,5 +1,6 @@
 
 import { Roadmap, ChatMessage, RoadmapWithHistory, RoadmapSummary } from '../types.ts';
+import { supabase } from '../lib/supabaseClient.ts';
 
 // FastAPI 백엔드 서버의 주소
 // 배포 환경에서는 같은 도메인에서 서빙되므로 상대 경로 사용
@@ -14,13 +15,19 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v2';
  */
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     try {
-        const headers: HeadersInit = {
-            ...options.headers,
+        const headers: Record<string, string> = {
+            ...(options.headers as Record<string, string>),
         };
 
         // FormData가 아닐 때만 Content-Type: application/json 추가
         if (!(options.body instanceof FormData)) {
-            (headers as Record<string, string>)['Content-Type'] = 'application/json';
+            headers['Content-Type'] = 'application/json';
+        }
+
+        // 현재 Supabase 세션의 access_token을 Authorization 헤더로 주입
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+            headers['Authorization'] = `Bearer ${session.access_token}`;
         }
 
         const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -29,6 +36,10 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
         });
 
         if (!response.ok) {
+            // 인증 만료/누락 시 세션 정리 → 앱이 로그인 화면으로 복귀
+            if (response.status === 401) {
+                await supabase.auth.signOut();
+            }
             const errorData = await response.json().catch(() => ({ message: response.statusText }));
             throw new Error(errorData.detail || errorData.message || 'API 요청에 실패했습니다.');
         }
