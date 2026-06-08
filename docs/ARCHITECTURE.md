@@ -1,7 +1,7 @@
 # 🏗️ ARCHITECTURE.md — AI 자기 계발 코치 (Grow v1)
 
-> **최종 수정:** 2026-03-07
-> **상태:** v1 MVP (v2 전환 준비 중)
+> **최종 수정:** 2026-06-08
+> **상태:** v2 진행 중 (사용자 인증·`user_id` 도입, API prefix `/api/v2`, Cloud Run 재배포 완료)
 
 ---
 
@@ -14,7 +14,7 @@
 │            Docker Container                  │
 │  ┌────────────────────────────────────┐      │
 │  │  FastAPI (Python 3.11+)           │      │
-│  │  ├── /api/v1/* → API 라우터       │      │
+│  │  ├── /api/v2/* → API 라우터       │      │
 │  │  └── /* → static/ 서빙 (React)   │      │
 │  └──────────────┬─────────────────────┘      │
 │                 │                            │
@@ -91,30 +91,34 @@ my-ai-coach/
 ## 3. 데이터 모델 (SQLAlchemy)
 
 ```
+User (1) ──→ (N) Roadmap
 Roadmap (1) ──→ (N) Mission
 Roadmap (1) ──→ (N) ChatHistory
 ```
 
 | 모델 | 테이블 | 핵심 필드 |
 |------|--------|----------|
-| `Roadmap` | `roadmaps` | `id`, `project_title`, `goal`, `level`, `duration`, `frequency`, `context_summary` |
+| `User` | `users` | `id(UUID)`, `email`, `nickname`, `is_admin`, `created_at` |
+| `Roadmap` | `roadmaps` | `id`, `user_id(FK→users)`, `project_title`, `goal`, `level`, `duration`, `frequency`, `context_summary` |
 | `Mission` | `missions` | `id`, `roadmap_id(FK)`, `week`, `theme`, `mission_key`, `title`, `is_completed`, `completed_at` |
 | `ChatHistory` | `chat_history` | `id`, `roadmap_id(FK)`, `role`, `text`, `image`, `model_image` |
 
-> **v1 한계:** `user_id` 없음 → 사용자 구분 불가
+> **사용자별 분리:** 모든 `Roadmap`은 `user_id`(Supabase Auth UUID)로 소유자에 귀속. 조회/수정 시 소유권 검증.
 
 ## 4. API 엔드포인트
 
 | Method | Path | 라우터 | 설명 |
 |--------|------|--------|------|
-| `POST` | `/api/v1/plan` | `plan.py` | 로드맵 생성 (multipart/form-data, PDF 지원) |
-| `POST` | `/api/v1/chat` | `chat.py` | AI 코칭 채팅 (퀴즈/미션완료 태그 포함) |
-| `POST` | `/api/v1/review` | `review.py` | 이미지 분석 피드백 |
-| `GET` | `/api/v1/roadmaps` | `roadmap.py` | 전체 로드맵 목록 |
-| `GET` | `/api/v1/roadmap/{id}` | `roadmap.py` | 로드맵 상세 + 채팅 이력 |
-| `PUT` | `/api/v1/roadmap/{id}/mission/{key}/complete` | `roadmap.py` | 미션 완료 처리 |
-| `GET` | `/api/stats/heatmap` | `stats.py` | 학습 활동 히트맵 |
-| `GET` | `/api/stats/progress/{id}` | `stats.py` | 로드맵 진행률 |
+| `POST` | `/api/v2/plan` | `plan.py` | 로드맵 생성 (multipart/form-data, PDF 지원) |
+| `POST` | `/api/v2/chat` | `chat.py` | AI 코칭 채팅 (퀴즈/미션완료 태그 포함) |
+| `POST` | `/api/v2/review` | `review.py` | 이미지 분석 피드백 |
+| `GET` | `/api/v2/roadmaps` | `roadmap.py` | 전체 로드맵 목록 |
+| `GET` | `/api/v2/roadmap/{id}` | `roadmap.py` | 로드맵 상세 + 채팅 이력 |
+| `PUT` | `/api/v2/roadmap/{id}/mission/{key}/complete` | `roadmap.py` | 미션 완료 처리 |
+| `GET` | `/api/v2/stats/heatmap` | `stats.py` | 학습 활동 히트맵 |
+| `GET` | `/api/v2/stats/progress/{id}` | `stats.py` | 로드맵 진행률 |
+
+> 모든 엔드포인트는 `get_current_user`(Supabase JWT) 인증을 요구합니다.
 
 ## 5. 핵심 데이터 플로우
 
@@ -146,12 +150,11 @@ Roadmap (1) ──→ (N) ChatHistory
 | **Frontend** | React 18 + Vite + TypeScript | Tailwind CSS |
 | **AI** | Google Gemini 2.5 Flash | 멀티모달 (텍스트+이미지) |
 | **DB** | SQLite (v1) → PostgreSQL/Supabase (v2) | SQLAlchemy ORM |
-| **배포** | Docker Multi-stage → Railway (v2) | 기존 Cloud Run 계정 삭제됨 |
+| **배포** | Docker Multi-stage → Google Cloud Run | 신규 계정으로 재배포 (Cloud Build) |
 
 ## 7. 알려진 제약사항 (v1)
 
-- **데이터 영속성 없음:** SQLite + Cloud Run = 재시작 시 데이터 손실
-- **사용자 인증 없음:** 모든 데이터가 공유됨
-- **RAG Lite만 적용:** 2000자 요약에 의존, 벡터 검색 미구현
-- **Alembic 미도입:** 스키마 변경 시 DB 초기화 필요
+- **데이터 영속성 없음:** SQLite + Cloud Run = 재시작 시 데이터 손실 (Supabase 전환으로 해결 예정)
+- **프론트엔드 인증 미연동:** 백엔드는 Supabase JWT를 강제하나 프론트가 토큰 미전송 → 연동 필요
+- **RAG Lite만 적용:** 2000자 요약에 의존, 벡터 검색 미구현 (`GEMINI_EMBEDDING_MODEL` 상수만 선언, 미사용)
 - **테스트 코드 0개:** 회귀 테스트 불가
