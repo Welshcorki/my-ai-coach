@@ -1,5 +1,10 @@
 # Google Cloud Run 배포 로그 (2025-12-10)
 
+> **현행 상태(2026-06 기준):** 아래 본문은 **최초 배포(2025-12-10) 시점의 기록**이다. 이후 변경 사항:
+> - **계정/리전 변경:** 기존 계정 삭제로 **신규 계정에 재배포**됨 — 현재 서비스 URL은 `https://my-ai-coach-1088022796535.us-central1.run.app`(리전 `us-central1`). 본문의 `asia-northeast3`는 최초 배포 기준.
+> - **DB:** SQLite(`/tmp`, 휘발성) → **Supabase(PostgreSQL)**. `DATABASE_URL` 환경변수 주입 시 PostgreSQL 사용, 데이터 영구 보존. 따라서 "최대 인스턴스 1(SQLite 정합성)"·"재시작 시 데이터 초기화" 제약은 더 이상 적용되지 않음.
+> - **인증:** Supabase JWT 강제 + 프론트엔드 Google OAuth 연동 완료. 환경변수에 `SUPABASE_*` 추가 필요(`.env.example` 참조).
+
 ## 0. 초기 배포 계획 (Initial Plan)
 
 ### 목표

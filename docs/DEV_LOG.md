@@ -2,6 +2,31 @@
 
 ---
 
+## 2026-06-12
+
+### 문서 정리 & 코드-문서 동기화
+
+#### 배경
+문서와 실제 코드/파일의 일치 여부를 점검. 인증 연동·Supabase 전환이 코드엔 반영됐으나 문서엔 "미구현/예정"으로 남은 시점 격차, 디렉토리 구조 누락, 노후 파일을 정리.
+
+#### 정리/삭제
+- **삭제:** `project_analysis.md.resolved`(2026-02-27 노후 스냅샷, 비정상 확장자), `docs/GEMINI.md`(DEV_LOG와 역할 중복 + 노후 TODO/구조 섹션). 유효한 초기 개발 일지(2025-11~12)는 본 DEV_LOG 하단으로 이관.
+- **삭제:** `app/api/__pycache__/supervisor.cpython-311.pyc`(소스 없는 stale 캐시).
+
+#### 코드-문서 동기화
+- `docs/ARCHITECTURE.md`
+  - 제목 v1→v2, 시스템 다이어그램에 Supabase Auth(JWKS)·프론트 OAuth·`DATABASE_URL` 분기 반영.
+  - 디렉토리 구조에 실재 파일 추가: `app/core/auth.py`, `app/schemas/user.py`, 프론트 `hooks/useAuth.ts`·`lib/supabaseClient.ts`·`components/LoginScreen.tsx`, `alembic/`. models.py 주석에 `User` 포함.
+  - **§4 인증 섹션 신설**(JWKS/ES256·HS256 분기, `get_current_user` 자동 User 생성, `DEV_BYPASS_AUTH`, 소유권 격리). 이후 섹션 번호 재조정.
+  - 기술스택에 Auth 행 추가, DB 행을 "PostgreSQL(운영)·SQLite 폴백"으로 정정. 제약사항에서 해결된 "프론트 인증 미연동" 제거.
+- `README.md` — Live Demo 경고를 "Supabase 영구 저장"으로 교체, 기술스택 Auth/DB 행 정정, Phase 1 체크박스 완료 반영, 디렉토리 트리에 인증 파일 추가.
+- `docs/DEPLOY.md` — 최초 배포 로그(2025-12-10)는 보존하되 상단에 현행 상태 노트 추가(신규 계정·`us-central1` 리전, Supabase DB, 인증 연동).
+
+#### 검증
+- API 엔드포인트 8종·데이터 모델 필드는 코드와 이미 일치함을 확인(수정 불필요).
+
+---
+
 ## 2026-06-11
 
 ### P0 후속 — Supabase 비대칭 키(ES256) 검증 + 로컬 E2E 완료
@@ -118,3 +143,58 @@
 - **LoginScreen:** 별도 로그인 페이지 (이메일 + Google 소셜)
 - **프로필:** 닉네임만 (아바타 미구현)
 - **관리자:** 페이지 미구현, `is_admin` 플래그만 DB에 준비
+
+---
+
+> 아래는 구 `docs/GEMINI.md`(개발자 노트)에서 이관한 초기 개발 일지(2025-11~12)다. 노후화된 "향후 계획/구조 분석" 섹션은 현 상태(인증·Alembic·미사용 폴더 삭제 모두 완료)와 어긋나 폐기하고, 날짜별 작업 기록만 보존한다.
+
+## 2025-12-22
+
+### 고도화 — 맥락 인식 & 퀴즈 시스템 완성
+- **맥락 인식(1단계) 완료:** `plan.py` PDF 요약 프롬프트를 목차+핵심 개념 포함 상세 요약(최대 2000자)으로 개선. `chat.py` 시스템 프롬프트가 `context_summary`를 "교재 기반 설명"의 핵심 자료로 활용하고 "교재에 따르면..."으로 인용하도록 지시.
+- **퀴즈 시스템(2단계) 완료:** `chat.py`가 지식 검증 시 `[QUIZ]...[/QUIZ]` JSON을 반환. 프론트엔드 `ChatMessage.quiz` 필드·`useGemini.ts` 파싱·`Chat.tsx`의 `QuizCard` UI 구현, 정답 클릭 시 자동 메시지 전송으로 학습 흐름 유지.
+- **검증 시스템 강화:** 단순 완료 승인 금지 → 지식형 미션은 1문제씩 출제·전부 통과 시에만 `[MISSION_COMPLETE]` 발송, 단호한 검증 페르소나 적용.
+
+## 2025-12-20
+
+### 고도화 — 맥락 인식 도입 & 대시보드
+- **맥락 인식:** `Roadmap.context_summary` 컬럼 추가(PDF 요약 저장), 채팅 시작 시 시스템 프롬프트에 주입("책을 아는 코치"). 스키마 변경으로 기존 `app.db` 초기화.
+- **학습 대시보드:** `GET /stats/heatmap` 구현(채팅+미션 완료 집계), `Mission.completed_at` 컬럼 추가. 프론트엔드에 `react-calendar-heatmap`/`recharts`/`react-tooltip` 도입, "나의 학습 열정(잔디 심기)" 섹션으로 지난 1년 활동 시각화.
+
+## 2025-12-10 (오후)
+
+### 핵심 기능 고도화 및 버그 수정
+- **동적 페르소나:** `chat.py`의 고정 "코딩 코치" 프롬프트 제거, DB 로드맵의 `Goal`/`Level`로 시스템 프롬프트를 동적 생성 → 요리·운동 등 다양한 주제 맥락 대응.
+- **미션 자동 완료:** AI가 완료 판단 시 `[MISSION_COMPLETE]` 태그 발송 → 프론트가 감지해 `completeMission` 호출·체크박스 갱신.
+- **채팅 오류 수정:** 새 로드맵 직후 "Roadmap ID missing" 에러 → `app/schemas/plan.py`에 `id: int` 추가로 해결.
+- **인프라 전략:** DB 비교 분석 완료(`DB_COMPARISON.md`), 영속성·벡터검색·무료티어 고려해 **Supabase(PostgreSQL)** 도입 결정.
+
+## 2025-12-10 (오전)
+
+### Cloud Run 최초 배포 성공
+- GitHub 연동 + Cloud Build + Dockerfile(멀티 스테이지: Node 20-alpine 빌드 → Python 3.11-slim 실행, `outDir: '../static'` 결과물 복사, 포트 8080).
+- **트러블슈팅:** `static` 누락 → Dockerfile 내부 빌드로 해결, TS `import.meta.env` 에러 → `tsconfig.json` 수정, Cloud Run read-only FS → DB `/tmp`·`StreamHandler` 로깅, `python-multipart` 의존성 추가.
+- **main.py:** `os.getenv("PORT","8000")`·host `0.0.0.0`으로 컨테이너 호환. **.dockerignore:** `venv`/`__pycache__`/`node_modules`/`.git` 등 제외.
+- **비용 관리:** Free Tier 전략(최소 인스턴스 0, Artifact Registry 주기 청소).
+
+## 2025-12-09
+
+### RAG Lite — PDF 교재 업로드·분석 기반 로드맵 생성 완료
+- **Backend:** `POST /plan`을 `multipart/form-data` 지원으로 변경, Gemini File API 연동, `print` → `logging` 전면 전환.
+- **Frontend:** `FormData` 전송(`useGemini.ts`), 파일 선택/취소 UI(`SetupScreen.tsx`).
+
+## 2025-11-29
+
+### 멀티 로드맵 & SQLite 영속화
+- **DB 구축:** `SQLAlchemy` 도입(`app/core/database.py`), `Roadmap`/`Mission`/`ChatHistory` 모델·자동 테이블 생성. 채팅·미션·로드맵이 `app.db`에 영구 저장되도록 API 전면 수정, 프론트는 `localStorage` 제거 후 `GET /roadmap/current`·`PUT /mission/complete` 연동.
+- **멀티 로드맵:** `GET /roadmaps`, `GET /roadmap/{id}` 추가, 기존 API를 `roadmap_id` 기반으로 수정, "나의 학습 목록" UI·이어하기 구현.
+- **기능 고도화:** 학습 빈도(Frequency)를 로드맵 생성 프롬프트에 반영, 실습/지식 이원화 검증 및 `[MISSION_COMPLETE]` 태그·체크박스 잠금/자동 진행 도입.
+- **UI/UX:** `@tailwindcss/typography`로 채팅 마크다운 정상화, 로딩 인디케이터 중복·Autofill 배경색 버그 수정.
+
+## 2025-11-28
+
+### 프론트-백엔드 통합 & 초기 안정화
+- React(Vite) + FastAPI 통합 서빙 구현(소스는 `frontend/`, 빌드 결과물 `static/`을 FastAPI가 서빙).
+- **프론트 트러블슈팅:** 채팅 스크롤 튐(`messagesEndRef`), 로딩 후 포커스 상실(`useRef`/`useEffect`), 불필요 필드 `422` 에러(`extra='ignore'`).
+- **백엔드/AI 트러블슈팅:** 답변 잘림(`max_output_tokens=1000`), 과도한 장문 응답(프롬프트 개선), `watchfiles` 로그 과다, 응답 포맷 불일치(`response` vs `text`).
+- 학습 검증 강화(퀴즈)·자동화(체크박스 제어) 단계적 추진 결정, `SetupScreen.tsx`에 학습 빈도 UI 추가.

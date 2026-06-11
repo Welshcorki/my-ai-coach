@@ -1,33 +1,40 @@
-# 🏗️ ARCHITECTURE.md — AI 자기 계발 코치 (Grow v1)
+# 🏗️ ARCHITECTURE.md — AI 자기 계발 코치 (Grow v2)
 
-> **최종 수정:** 2026-06-08
-> **상태:** v2 진행 중 (사용자 인증·`user_id` 도입, API prefix `/api/v2`, Cloud Run 재배포 완료)
+> **최종 수정:** 2026-06-12
+> **상태:** v2 (Supabase JWT 인증·`user_id` 도입, 프론트엔드 Google OAuth 연동 완료, API prefix `/api/v2`, Cloud Run 배포)
 
 ---
 
 ## 1. 시스템 개요
 
-단일 Docker 컨테이너로 FastAPI(백엔드) + React(프론트엔드 빌드 결과물)를 서빙하는 모놀리식 구조.
+단일 Docker 컨테이너로 FastAPI(백엔드) + React(프론트엔드 빌드 결과물)를 서빙하는 모놀리식 구조. 프론트는 Supabase Google OAuth로 로그인해 JWT를 모든 API 요청에 주입하고, 백엔드는 JWKS로 토큰을 검증한다.
 
 ```
+   [브라우저 React SPA]
+     │  Google OAuth 로그인 → Supabase Auth → access_token(JWT)
+     │  모든 요청에 Authorization: Bearer <token>
+     ▼
 ┌─────────────────────────────────────────────┐
 │            Docker Container                  │
 │  ┌────────────────────────────────────┐      │
 │  │  FastAPI (Python 3.11+)           │      │
+│  │  ├── get_current_user (JWT 검증)   │      │
 │  │  ├── /api/v2/* → API 라우터       │      │
 │  │  └── /* → static/ 서빙 (React)   │      │
 │  └──────────────┬─────────────────────┘      │
 │                 │                            │
-│      ┌──────────┴──────────┐                │
-│      │  SQLite (app.db)    │                │
-│      └─────────────────────┘                │
+│   DATABASE_URL에 따라 분기                    │
+│   ┌─────────────┴─────────────┐             │
+│   │ PostgreSQL(Supabase, 운영) │             │
+│   │ ↘ 미설정 시 SQLite(app.db) │             │
+│   └───────────────────────────┘             │
 └─────────────────────────────────────────────┘
-                  │
-                  ▼
-        ┌─────────────────┐
-        │ Google Gemini API│
-        │ (gemini-2.5-flash)│
-        └─────────────────┘
+        │                         │
+        ▼                         ▼
+┌─────────────────┐    ┌────────────────────────┐
+│ Google Gemini API│    │ Supabase Auth (JWKS)   │
+│ (gemini-2.5-flash)│    │ .well-known/jwks.json  │
+└─────────────────┘    └────────────────────────┘
 ```
 
 ## 2. 디렉토리 구조
@@ -44,7 +51,6 @@ my-ai-coach/
 │   ├── ARCHITECTURE.md     # 시스템 아키텍처 (이 문서)
 │   ├── DEV_LOG.md          # 개발 작업 로그
 │   ├── DEPLOY.md           # 배포 가이드
-│   ├── GEMINI.md           # AI 에이전트 작업 노트
 │   ├── ai_coach_v2.md      # v2 기획안
 │   ├── DB_COMPARISON.md    # DB 비교 분석
 │   └── DECISION_LOG.md     # 기술 결정 기록
@@ -52,9 +58,11 @@ my-ai-coach/
 ├── .agents/workflows/      # 코딩 규칙 (자동 참조)
 │   └── coding-rules.md
 │
+├── alembic/                # DB 마이그레이션 이력 (alembic.ini는 루트)
+│
 ├── app/                    # 백엔드
 │   ├── __init__.py
-│   ├── models.py           # SQLAlchemy ORM 모델 (Roadmap, Mission, ChatHistory)
+│   ├── models.py           # SQLAlchemy ORM 모델 (User, Roadmap, Mission, ChatHistory)
 │   ├── api/                # FastAPI 라우터 (엔드포인트)
 │   │   ├── chat.py         # POST /chat — AI 코칭 채팅
 │   │   ├── plan.py         # POST /plan — 로드맵 생성 (PDF 지원)
@@ -63,21 +71,27 @@ my-ai-coach/
 │   │   └── stats.py        # GET /heatmap, GET /progress/{id}
 │   ├── core/
 │   │   ├── config.py       # Settings 클래스 (환경 변수, 모델 상수, Gemini 초기화)
-│   │   └── database.py     # SQLAlchemy 엔진/세션 설정
+│   │   ├── database.py     # SQLAlchemy 엔진/세션 설정 (DATABASE_URL 분기)
+│   │   └── auth.py         # Supabase JWT 검증 (JWKS/ES256·HS256), get_current_user
 │   ├── schemas/            # Pydantic 요청/응답 모델
 │   │   ├── chat.py         # ChatRequest, ChatResponse
 │   │   ├── plan.py         # PlanRequest, RoadmapResponse
 │   │   ├── review.py       # ReviewRequest, ReviewResponse
-│   │   └── roadmap.py      # RoadmapWithHistory, RoadmapSummary
-│   └── services/           # (비어있음, v2에서 비즈니스 로직 분리 예정)
+│   │   ├── roadmap.py      # RoadmapWithHistory, RoadmapSummary
+│   │   └── user.py         # User 관련 스키마
+│   └── services/           # (비어있음, 비즈니스 로직 분리용 예약)
 │
 ├── frontend/               # React + Vite + TypeScript 소스
 │   ├── src/
-│   │   ├── App.tsx          # 앱 루트 (로드맵 상태 관리)
+│   │   ├── App.tsx          # 앱 루트 (세션 게이트 + 로드맵 상태 관리)
 │   │   ├── types.ts         # 공유 타입 정의
 │   │   ├── hooks/
-│   │   │   └── useGemini.ts # API 통신 함수 모음
+│   │   │   ├── useGemini.ts # API 통신 함수 모음 (Bearer 토큰 자동 주입)
+│   │   │   └── useAuth.ts   # Supabase 세션 로드/구독, 로그인·로그아웃
+│   │   ├── lib/
+│   │   │   └── supabaseClient.ts  # Supabase 클라이언트 단일 인스턴스
 │   │   └── components/
+│   │       ├── LoginScreen.tsx  # Google OAuth 로그인 화면
 │   │       ├── SetupScreen.tsx  # 초기 화면 (로드맵 생성/목록)
 │   │       ├── Dashboard.tsx    # 학습 대시보드 (로드맵+채팅)
 │   │       ├── Chat.tsx         # 채팅 UI + QuizCard
@@ -105,7 +119,20 @@ Roadmap (1) ──→ (N) ChatHistory
 
 > **사용자별 분리:** 모든 `Roadmap`은 `user_id`(Supabase Auth UUID)로 소유자에 귀속. 조회/수정 시 소유권 검증.
 
-## 4. API 엔드포인트
+## 4. 인증 (Supabase JWT)
+
+프론트엔드는 Supabase Google OAuth로 로그인([useAuth.ts](../frontend/src/hooks/useAuth.ts))하고, [useGemini.ts](../frontend/src/hooks/useGemini.ts)의 `fetchAPI`가 모든 요청에 `Authorization: Bearer <access_token>`을 주입한다. 401 응답 시 자동 로그아웃한다.
+
+백엔드 [app/core/auth.py](../app/core/auth.py)의 `get_current_user`가 토큰을 검증하고 **첫 로그인 시 `User`를 자동 생성**한다. 검증은 토큰 헤더의 `alg`로 분기한다:
+
+- **비대칭(ES256/RS256):** Supabase JWKS(`/auth/v1/.well-known/jwks.json`)의 `kid` 매칭 공개키로 검증. JWKS는 10분 캐시 + kid 미스 시 1회 강제 갱신(키 회전 자동 대응).
+- **레거시 HS256:** `SUPABASE_JWT_SECRET` 공유 비밀로 검증(과도기 호환용).
+
+`DEV_BYPASS_AUTH=true`면 인증을 우회하고 고정 테스트 유저(UUID all-zeros)를 쓴다 — **운영 금지.**
+
+**소유권 격리:** 모든 roadmap/chat/mission 쿼리는 `user_id == current_user.id`로 필터링한다.
+
+## 5. API 엔드포인트
 
 | Method | Path | 라우터 | 설명 |
 |--------|------|--------|------|
@@ -120,7 +147,7 @@ Roadmap (1) ──→ (N) ChatHistory
 
 > 모든 엔드포인트는 `get_current_user`(Supabase JWT) 인증을 요구합니다.
 
-## 5. 핵심 데이터 플로우
+## 6. 핵심 데이터 플로우
 
 ### 로드맵 생성
 ```
@@ -142,19 +169,19 @@ Roadmap (1) ──→ (N) ChatHistory
   → DB에 user/model 메시지 저장
 ```
 
-## 6. 기술 스택
+## 7. 기술 스택
 
 | 계층 | 기술 | 비고 |
 |------|------|------|
 | **Backend** | FastAPI + Python 3.11+ | 비동기, 자동 문서화 |
 | **Frontend** | React 18 + Vite + TypeScript | Tailwind CSS |
 | **AI** | Google Gemini 2.5 Flash | 멀티모달 (텍스트+이미지) |
-| **DB** | SQLite (v1) → PostgreSQL/Supabase (v2) | SQLAlchemy ORM |
-| **배포** | Docker Multi-stage → Google Cloud Run | 신규 계정으로 재배포 (Cloud Build) |
+| **Auth** | Supabase Auth (Google OAuth) | JWT, 백엔드 JWKS/ES256 검증 |
+| **DB** | PostgreSQL/Supabase (운영) · SQLite 폴백(로컬) | SQLAlchemy ORM, `DATABASE_URL` 분기 |
+| **배포** | Docker Multi-stage → Google Cloud Run | Cloud Build |
 
-## 7. 알려진 제약사항 (v1)
-
-- **데이터 영속성 없음:** SQLite + Cloud Run = 재시작 시 데이터 손실 (Supabase 전환으로 해결 예정)
-- **프론트엔드 인증 미연동:** 백엔드는 Supabase JWT를 강제하나 프론트가 토큰 미전송 → 연동 필요
+## 8. 알려진 제약사항
 - **RAG Lite만 적용:** 2000자 요약에 의존, 벡터 검색 미구현 (`GEMINI_EMBEDDING_MODEL` 상수만 선언, 미사용)
 - **테스트 코드 0개:** 회귀 테스트 불가
+- **Cloud Run SQLite 휘발성:** `DATABASE_URL` 미주입 시 SQLite(`/tmp`)로 폴백하면 재시작 시 데이터 손실 → 운영은 반드시 Supabase `DATABASE_URL` 주입
+- **이메일/비밀번호 로그인 미구현:** 현재 Google OAuth만 지원

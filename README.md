@@ -7,9 +7,8 @@
 ## 0. 🌐 서비스 체험 (Live Demo)
 👉 **[서비스 접속하기](https://my-ai-coach-1088022796535.us-central1.run.app)**
 
-**⚠️ 주의사항:**
-현재 버전은 **임시 데이터베이스(SQLite)**를 사용하고 있습니다.
-서버가 재시작되면 **학습 로드맵과 채팅 기록이 초기화**될 수 있으니, 중요한 데이터는 별도로 백업해 주세요. (추후 업데이트 예정)
+**ℹ️ 안내:**
+로그인은 **Google 계정(Supabase Auth)**으로 진행되며, 학습 로드맵과 채팅 기록은 **Supabase(PostgreSQL)**에 계정별로 영구 저장됩니다.
 
 ---
 
@@ -33,7 +32,8 @@
 | **Frontend** | **React + Vite** | 빠른 빌드 속도와 컴포넌트 기반의 유연한 UI 개발 |
 | **Deployment** | **Google Cloud Run** | Docker 컨테이너 기반의 완전 관리형 서버리스 배포 |
 | **CI/CD** | **Google Cloud Build** | GitHub Push 시 자동 빌드 및 배포 파이프라인 구축 |
-| **Database** | **SQLite (임시)** | `/tmp` 경로를 활용한 인메모리 성격의 임시 저장소 (추후 PostgreSQL 전환 예정) |
+| **Auth** | **Supabase Auth (Google OAuth)** | JWT 기반 인증, 백엔드 JWKS/ES256 검증 |
+| **Database** | **PostgreSQL (Supabase)** | 계정별 영구 저장 (`DATABASE_URL` 미설정 시 로컬 SQLite 폴백) |
 
 ## 3. 💡 주요 기능 (Key Features)
 
@@ -63,10 +63,10 @@
 
 이 프로젝트는 현재 **v2.0 전환 단계**에 있으며, 지속적으로 발전하고 있습니다. 상세 계획은 [ai_coach_v2.md](docs/ai_coach_v2.md)를 참조하세요.
 
-### 🚨 Phase 1: 인프라 안정화 (진행 중)
+### ✅ Phase 1: 인프라 안정화 (완료)
 - [x] **코드 정리 & 문서화:** 미사용 폴더 정리 및 `docs/` 중심 문서화 완료.
-- [/] **영구 DB 도입:** Supabase(PostgreSQL) 연동 및 Alembic 마이그레이션 도입.
-- [/] **사용자 인증:** Supabase Auth를 이용한 개인별 학습 기록 관리 구현 중.
+- [x] **영구 DB 도입:** Supabase(PostgreSQL) 연동 및 Alembic 마이그레이션 도입.
+- [x] **사용자 인증:** Supabase Auth(Google OAuth) 기반 개인별 학습 기록 관리 + 백엔드 JWKS/ES256 검증 완료.
 
 ### 🚀 Phase 2: 기능 고도화
 - [ ] **로드맵 생성 고도화:** 사용자 수준/학습 빈도 반영 강화.
@@ -101,13 +101,17 @@ my-ai-coach/
  ├── frontend/              # [Frontend] React (Vite + TypeScript) 소스 코드
  │   ├── src/
  │   │   ├── components/    # UI 컴포넌트
+ │   │   │   ├── LoginScreen.tsx    # Google OAuth 로그인 화면
  │   │   │   ├── Chat.tsx           # 채팅 인터페이스
  │   │   │   ├── Dashboard.tsx      # 대시보드 (로드맵 + 채팅)
  │   │   │   ├── Roadmap.tsx        # 로드맵 표시
  │   │   │   ├── SetupScreen.tsx    # 초기 설정 화면
  │   │   │   └── Icons.tsx          # 아이콘 컴포넌트
  │   │   ├── hooks/         # 커스텀 훅
- │   │   │   └── useGemini.ts      # API 통신 훅
+ │   │   │   ├── useGemini.ts      # API 통신 훅 (Bearer 토큰 주입)
+ │   │   │   └── useAuth.ts        # Supabase 세션/로그인 훅
+ │   │   ├── lib/          # 외부 클라이언트
+ │   │   │   └── supabaseClient.ts # Supabase 클라이언트 인스턴스
  │   │   ├── App.tsx        # 메인 앱 컴포넌트
  │   │   ├── main.tsx       # React 진입점
  │   │   ├── types.ts       # TypeScript 타입 정의

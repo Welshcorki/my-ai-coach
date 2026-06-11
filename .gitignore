@@ -14,8 +14,14 @@ __pycache__/
 .vscode/
 .idea/
 
-# Database
+# Claude Code (개인용 — 전체 제외)
+.claude/
+
+# Database (SQLite 본체 + WAL/journal 사이드카)
 app.db
+app.db-journal
+app.db-wal
+app.db-shm
 
 # Logs
 logs/
@@ -28,6 +34,7 @@ frontend/dist/
 # Build artifacts (served by FastAPI)
 static/
 
-# Data files
-data/*
-!data/.gitkeep
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
