@@ -2,6 +2,29 @@
 
 ---
 
+## 2026-06-11
+
+### P0 후속 — Supabase 비대칭 키(ES256) 검증 + 로컬 E2E 완료
+
+#### 배경
+로컬 E2E 검증 중, 해당 Supabase 프로젝트가 **신형 JWT 서명 키(ECC P-256 / ES256)** 로 마이그레이션돼 있어 기존 HS256 공유 비밀 검증으로는 토큰을 검증할 수 없음(401). JWKS 기반 비대칭 검증으로 전환하고, 연쇄적으로 드러난 버그를 수정해 Google 로그인 E2E를 통과시킴.
+
+#### 변경/수정
+- `app/core/auth.py`
+  - **JWKS/ES256 검증 도입**: `verify_supabase_token`이 토큰 헤더의 `alg`로 분기 — HS256은 기존 공유 비밀, 비대칭(ES256/RS256)은 `…/auth/v1/.well-known/jwks.json`에서 `kid` 매칭 공개키로 검증. JWKS는 10분 캐시 + kid 미스 시 1회 강제 갱신(키 회전 자동 대응).
+  - **UUID 버그 수정**: 토큰 `sub`(문자열)를 `uuid.UUID`로 변환 후 조회/생성 (User.id가 UUID 타입이라 문자열 바인딩 시 `'str' object has no attribute 'hex'` 크래시).
+- `tsconfig.json` — TS 7.0에서 제거 예정인 deprecated `baseUrl` 제거(`paths`는 tsconfig 기준 상대경로로 유지).
+- `.env.example`(루트 신규) — 백엔드 키 템플릿. `frontend/.env.example` — Publishable key 사용/secret 금지 주석.
+
+#### 검증 (로컬 E2E)
+- Google OAuth 로그인 성공 → ES256 토큰 → 백엔드 JWKS 검증 통과 → `/api/v2/roadmaps`, `/api/v2/stats/heatmap` **200 OK** (백엔드 로그 확인).
+- 도중 stale `app.db`(user_id 컬럼 없는 구 스키마) → 로컬 DB 삭제 후 재생성으로 해결. (운영 전환 시 Alembic 마이그레이션 필요 — P1)
+
+#### 결정
+- 키 회전 니즈 + Supabase의 공유 secret 폐기 방향을 고려해 HS256 롤백 대신 **JWKS/ES256**(rotation-safe) 채택. HS256 분기는 과도기 호환용으로 함께 유지.
+
+---
+
 ## 2026-06-08
 
 ### 문서·코드 불일치 동기화 (Docs Sync)
