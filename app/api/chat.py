@@ -85,12 +85,12 @@ async def chat_with_ai(
              응답의 맨 마지막에 아래와 같은 JSON 블록을 포함시켜야 합니다.
              ```json
              [QUIZ]
-             {
+             {{
                "question": "문제 내용",
                "options": ["보기1", "보기2", "보기3", "보기4"],
                "answer_index": 0,
                "explanation": "정답에 대한 해설"
-             }
+             }}
              [/QUIZ]
              ```
            - **진행 규칙:**
