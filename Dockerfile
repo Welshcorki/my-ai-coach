@@ -8,14 +8,9 @@ COPY frontend/package*.json ./
 # npm install (package-lock.json이 없어도 작동)
 RUN npm install
 
-# Supabase 설정 (Vite는 빌드 시점에 VITE_* 를 번들에 인라인함)
-# Cloud Build substitution 등으로 --build-arg 전달 필요. anon key는 공개 키라 노출 무방.
-ARG VITE_SUPABASE_URL
-ARG VITE_SUPABASE_ANON_KEY
-ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
-ENV VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
-
 # 소스 복사 및 빌드
+# VITE_* 공개 키는 frontend/.env.production(레포 커밋)에서 Vite가 자동 로드함.
+# (진짜 비밀은 여기 두지 않으며, 백엔드 비밀은 Cloud Run 서비스 env로 주입)
 COPY frontend/ .
 RUN npm run build
 
