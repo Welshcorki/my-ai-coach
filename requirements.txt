@@ -10,3 +10,7 @@ psycopg2-binary
 alembic
 supabase
 python-jose[cryptography]
+
+# 테스트
+pytest
+httpx  # FastAPI TestClient 의존

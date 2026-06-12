@@ -4,6 +4,34 @@
 
 ## 2026-06-12
 
+### 운영 안정화 — Alembic 베이스라인 · CORS · 테스트 도입
+
+#### 배경
+배포 안정화를 위한 코드 측 선결 과제 처리. `alembic/versions/`가 비어 있어 스키마 변경 관리가 불가능했고, CORS는 무효 조합(`*` + credentials), 회귀 테스트는 0개였음.
+
+#### A-1. Alembic 초기 마이그레이션
+- `alembic/versions/4cb6005c2984_initial_schema.py` 생성(빈 임시 SQLite 대상 autogenerate → 4개 테이블 전체 CREATE 캡처). UUID/타임스탬프 컬럼이 dialect-agnostic이라 PostgreSQL에도 이식 가능. upgrade/downgrade 양방향 검증 완료.
+- `main.py`: `Base.metadata.create_all`을 **SQLite 한정**으로 변경. 운영 PostgreSQL은 Alembic 전담 — create_all이 선행되면 `alembic upgrade head`가 "테이블 이미 존재"로 실패하기 때문. (기존 운영 DB는 `alembic stamp head`로 베이스라인 정렬)
+
+#### A-2. CORS 정정
+- `app/core/config.py`: `ALLOWED_ORIGINS`(env, 콤마 구분) 추가. 기본값은 로컬 개발 출처만.
+- `main.py`: `allow_origins=["*"] + allow_credentials=True`(브라우저가 거부하는 무효 조합) → `settings.ALLOWED_ORIGINS` + `allow_credentials=False`. 인증이 Bearer 토큰(쿠키 아님)이라 자격증명 불필요, 운영은 동일 출처 서빙이라 CORS 자체가 사실상 불필요.
+- `.env.example`: `ALLOWED_ORIGINS` 항목 추가.
+
+#### A-3. 테스트 도입 (pytest)
+- `tests/` 신설(`conftest.py` + 2개 스위트, 총 9 테스트 통과). 인메모리 SQLite + 의존성 오버라이드로 격리.
+- `test_plan_parsing.py`: `extract_roadmap_json`(plan.py에서 순수 함수로 추출) — 마크다운 펜스/잡문자 방어, 중첩 괄호, 무효 입력 예외.
+- `test_ownership.py`: 소유권 격리 — 타인 로드맵 목록/상세/미션완료 차단(404), 미인증 401.
+- `requirements.txt`에 `pytest` 추가, `.gitignore`에 `.pytest_cache/`.
+
+#### 검증
+- `pytest` 9 passed. 앱 import 스모크 통과(SQLite create_all 분기·CORS 설정 로드 확인).
+
+#### 운영 측 남은 작업 (코드 외 — 수동)
+- Cloud Run env에 `DATABASE_URL`(Supabase)·`DEV_BYPASS_AUTH=false`·`SUPABASE_*` 주입, Supabase Auth Redirect URL에 운영 도메인 등록, 운영 DB `alembic upgrade head`, 배포 후 E2E 스모크.
+
+---
+
 ### 문서 정리 & 코드-문서 동기화
 
 #### 배경

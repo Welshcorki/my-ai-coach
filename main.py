@@ -8,8 +8,13 @@ from logging.handlers import RotatingFileHandler
 from app.core.database import engine, Base
 from app import models
 
-# DB 테이블 생성 (존재하지 않을 경우)
-Base.metadata.create_all(bind=engine)
+# DB 스키마 관리:
+#  - 로컬 SQLite: 편의상 시작 시 자동 생성 (마이그레이션 없이 즉시 실행 가능)
+#  - 운영 DB(PostgreSQL 등): Alembic이 전담 (`alembic upgrade head`).
+#    여기서 create_all을 호출하면 alembic_version 없이 테이블이 먼저 생겨
+#    `alembic upgrade head`가 "테이블 이미 존재"로 실패하므로 제외한다.
+if engine.dialect.name == "sqlite":
+    Base.metadata.create_all(bind=engine)
 
 # --- Logging Configuration ---
 handlers = [logging.StreamHandler()] # 기본적으로 콘솔 출력은 항상 활성화
@@ -40,14 +45,15 @@ logger.info("Initializing AI Coach Server...")
 app = FastAPI()
 
 # CORS 미들웨어 설정
-origins = [
-    "*",  # 개발용
-]
+# 허용 출처는 settings.ALLOWED_ORIGINS(env: ALLOWED_ORIGINS)로 제어. 인증은 Bearer
+# 토큰(쿠키 아님)이라 allow_credentials는 불필요하며, 이를 False로 두면 와일드카드(*)
+# 출처도 유효하게 사용할 수 있다.
+from app.core.config import settings
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

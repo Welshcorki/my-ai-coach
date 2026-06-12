@@ -37,6 +37,21 @@ class Settings:
     # --- Dev Testing ---
     DEV_BYPASS_AUTH: bool = os.getenv("DEV_BYPASS_AUTH", "false").lower() == "true"
 
+    # --- CORS ---
+    # 콤마로 구분된 허용 출처. 운영은 SPA를 동일 출처로 서빙하므로 CORS가 사실상
+    # 불필요하고, 기본값은 로컬 개발(Vite :5173 → :8000)만 허용한다.
+    # 인증은 Bearer 토큰(쿠키 아님)이라 자격증명(allow_credentials)은 쓰지 않으며,
+    # 필요 시 ALLOWED_ORIGINS=* 로 전체 허용 가능(이때도 쿠키는 미사용).
+    ALLOWED_ORIGINS: list[str] = [
+        o.strip()
+        for o in os.getenv(
+            "ALLOWED_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173,"
+            "http://localhost:8000,http://127.0.0.1:8000",
+        ).split(",")
+        if o.strip()
+    ]
+
     # --- AI Model Constants ---
     GEMINI_MODEL_NAME: str = "gemini-2.5-flash"
     GEMINI_EMBEDDING_MODEL: str = "gemini-embedding-001"

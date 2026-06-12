@@ -182,6 +182,8 @@ Roadmap (1) ──→ (N) ChatHistory
 
 ## 8. 알려진 제약사항
 - **RAG Lite만 적용:** 2000자 요약에 의존, 벡터 검색 미구현 (`GEMINI_EMBEDDING_MODEL` 상수만 선언, 미사용)
-- **테스트 코드 0개:** 회귀 테스트 불가
+- **테스트 커버리지 초기 단계:** 로드맵 JSON 파싱·소유권 격리 회귀 테스트만 존재(`tests/`), 그 외 광범위 커버리지는 미비
 - **Cloud Run SQLite 휘발성:** `DATABASE_URL` 미주입 시 SQLite(`/tmp`)로 폴백하면 재시작 시 데이터 손실 → 운영은 반드시 Supabase `DATABASE_URL` 주입
 - **이메일/비밀번호 로그인 미구현:** 현재 Google OAuth만 지원
+
+> **DB 스키마 관리:** 운영(PostgreSQL)은 Alembic 전담. `main.py`의 `create_all`은 로컬 SQLite에서만 동작하며, 운영 배포 시 `alembic upgrade head`로 적용한다.

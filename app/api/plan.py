@@ -20,6 +20,23 @@ router = APIRouter()
 
 # Gemini API는 config.py에서 1회 초기화됨
 
+
+def extract_roadmap_json(response_text: str) -> dict:
+    """LLM 응답 문자열에서 로드맵 JSON을 안전하게 추출·파싱한다.
+
+    LLM이 형식을 어기는 경우(마크다운 펜스, 앞뒤 잡문자)를 방어하기 위해
+    ```json 펜스를 제거하고 첫 '{'부터 마지막 '}'까지만 취해 파싱한다.
+
+    Raises:
+        json.JSONDecodeError: 유효한 JSON 객체를 찾지 못한 경우.
+    """
+    cleaned_text = re.sub(r"```json\s*|\s*```", "", response_text).strip()
+    # 시작/끝에 이상한 문자가 붙을 경우를 대비해 첫 '{'와 마지막 '}' 사이만 추출
+    match = re.search(r"\{.*\}", cleaned_text, re.DOTALL)
+    if match:
+        cleaned_text = match.group(0)
+    return json.loads(cleaned_text)
+
 @router.post("/plan", response_model=RoadmapResponse)
 async def generate_plan(
     goal: str = Form(...),
@@ -131,15 +148,8 @@ async def generate_plan(
         response = model.generate_content(request_content)
         response_text = response.text
 
-        # 안전한 파싱을 위한 정제 (Markdown 코드 블록 제거)
-        cleaned_text = re.sub(r"```json\s*|\s*```", "", response_text).strip()
-        
-        # 가끔 시작/끝에 이상한 문자가 붙을 경우를 대비해 첫 '{'와 마지막 '}' 사이만 추출
-        match = re.search(r"\{.*\}", cleaned_text, re.DOTALL)
-        if match:
-            cleaned_text = match.group(0)
-
-        roadmap_data = json.loads(cleaned_text)
+        # 안전한 파싱 (마크다운/잡문자 방어는 extract_roadmap_json이 담당)
+        roadmap_data = extract_roadmap_json(response_text)
         logger.info(f"Roadmap generated successfully: {roadmap_data.get('project_title')}")
 
         # DB 저장 로직 (현재 사용자 ID 연결)

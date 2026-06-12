@@ -23,9 +23,14 @@ npm run build                       # tsc + vite build → ../static 출력 (Fas
 # DB 마이그레이션 (루트에서, DATABASE_URL 설정 후)
 alembic revision --autogenerate -m "설명"
 alembic upgrade head
+
+# 테스트 (루트에서)
+pytest                              # tests/ 전체. 인메모리 SQLite로 격리됨
 ```
 
-테스트 스위트는 아직 없다. coding-rules.md는 테스트를 요구하므로 새 기능 추가 시 회귀 테스트를 함께 만드는 것을 고려할 것.
+테스트는 `tests/`에 있다(pytest). 현재 커버리지: 로드맵 JSON 파싱 방어(`extract_roadmap_json`)와 소유권 격리(roadmap/mission). coding-rules.md가 테스트를 요구하므로 새 기능 추가 시 회귀 테스트를 함께 작성할 것.
+
+**스키마 관리:** 운영 DB(PostgreSQL)는 Alembic이 전담한다. `main.py`의 `create_all`은 로컬 SQLite에서만 실행되며, 운영 배포 시 `alembic upgrade head`가 필요하다(직접 `create_all`이 선행되면 alembic이 "테이블 이미 존재"로 실패).
 
 ## Architecture
 
